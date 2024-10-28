@@ -1,0 +1,469 @@
+<!-- 연결주소 : http://localhost:8080/Mainpage.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메인 페이지</title>
+    <link
+        href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        rel="stylesheet"
+    />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #f4f4f4;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 500px; 
+            padding: 40px 40px 20px 40px;
+            margin: 0 auto;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            background: linear-gradient(135deg, #ffffff 0%, #f7f7f7 100%);
+        }
+
+        #button-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .nav-button {
+            font-size: 12px;
+            padding: 7px 15px;
+            margin-left: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .nav-button.btn-secondary {
+            background-color: #6c757d;
+            color: #fff;
+        }
+
+        .nav-button.btn-danger {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .nav-button:hover {
+            background-color: #5a6268;
+        }
+
+        .card-title {
+            font-weight: bold;
+            font-size: 1.8rem; 
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #333;
+        }
+
+        .divider {
+            border-top: 1px solid #d6d6d6;
+            margin: 0px 0px 20px 0px; 
+        }
+
+        .btn-register {
+            display: none;
+            font-size: 12px;
+        }
+
+        .no-votes-message {
+            text-align: center;
+            color: #6c757d;
+            margin-top: 20px;
+        }
+
+        .vote-item {
+        	margin-left: 5px;
+        	margin-right: 5px;
+            margin-bottom: 10px;
+            padding: 15px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease; 
+        }
+
+        .vote-item:hover {
+            background-color: #e3f2fd;
+            transform: scale(1.05);
+        }
+
+        .vote-title {
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: #454545;
+        }
+
+        .vote-dates {
+            font-size: 0.8rem;
+            color: #888888;
+            white-space: pre-line;
+        }
+        
+        #votes-container {
+		    visibility: hidden;
+		    transition: visibility 0.5s ease-in-out;
+		}
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px; 
+        }
+
+        .pagination span {
+            margin: 0 5px;
+            cursor: pointer;
+        }
+
+        .pagination .active-page {
+            font-weight: bold;
+            color: #007bff; 
+        }
+
+        .delete-icon {
+            color: #dc3545;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+        
+        .vote-item.before {
+		    background-color: #d3d3d3; 
+		    cursor: not-allowed;
+		}
+        
+        .vote-item.expired {
+		    background-color: #a9a9a9; 
+		    cursor: not-allowed;
+		}
+
+    </style>
+</head>
+<body>
+    <div id="button-container">
+        <button id="info-button" class="btn btn-secondary nav-button">마이페이지</button>
+        <button id="logout-button" class="btn btn-danger nav-button">로그아웃</button>
+    </div>
+    
+    <div class="container" id="main-content">
+        <div class="card">
+            <div class="card-body">
+                <div class="card-title">
+                    투표 목록
+                    <button id="register-button" class="btn btn-primary btn-register">투표 등록</button>
+                </div>
+                <hr class="divider">
+                <div id="votes-container" class="no-votes-message">등록된 투표가 없습니다.</div>
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+    <script>
+        let currentPage = 1;
+        const itemsPerPage = 4; // 한 페이지당 표시할 목록 수
+
+        function loadMainPage() {
+            const token = localStorage.getItem("jwtToken");
+
+            if (token) {
+                fetch("/userinfo", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                })
+                .then(response => {
+                    if (response.status === 200) {
+                        return response.json();
+                    } else {
+                        throw new Error("Unauthorized access");
+                    }
+                })
+                .then(data => {
+                    document.getElementById("main-content").style.display = "block";
+                    const userType = data.user_type;
+                    if (userType === "admin" || userType === "ec") {
+                        document.getElementById("register-button").style.display = "inline-block";
+                    }
+
+                    loadVotes();
+                })
+                .catch(error => {
+                    alert(error.message);
+                    window.location.href = "Loggingin.html";
+                });
+            } else {
+                alert("로그인이 필요합니다!");
+                window.location.href = "Loggingin.html";
+            }
+        }
+
+        // 투표 목록 불러오기
+		function loadVotes() {
+		    const token = localStorage.getItem("jwtToken");
+		    const votesContainer = document.getElementById("votes-container");
+		    
+		    // 이전 컨텐츠를 잠시 숨기기
+		    votesContainer.style.visibility = 'hidden';
+		
+		    fetch("/getvotes", {
+		        method: "GET",
+		        headers: {
+		            "Authorization": "Bearer " + token
+		        }
+		    })
+		    .then(response => {
+		        if (!response.ok) {
+		            throw new Error("Network response was not ok");
+		        }
+		        return response.json();
+		    })
+		    .then(votes => {
+		        if (votes.length === 0) {
+		            votesContainer.innerHTML = "등록된 투표가 없습니다.";
+		        } else {
+		        	const currentDate = new Date();
+
+		        	votes.sort((a, b) => {
+		        	    const startDateA = new Date(a.start);
+		        	    const endDateA = new Date(a.end);
+		        	    const startDateB = new Date(b.start);
+		        	    const endDateB = new Date(b.end);
+
+		        	    // 1. 현재 진행 중인 항목이 시작 전 또는 종료된 항목보다 우선 정렬
+		        	    if ((startDateA <= currentDate && endDateA >= currentDate) && 
+		        	        (startDateB > currentDate || endDateB < currentDate)) return -1;
+		        	    if ((startDateB <= currentDate && endDateB >= currentDate) && 
+		        	        (startDateA > currentDate || endDateA < currentDate)) return 1;
+
+		        	    // 2. 종료된 항목이 진행 중인 항목보다 뒤에 정렬
+		        	    if (endDateA < currentDate && endDateB < currentDate) return endDateA - endDateB;
+
+		        	    // 3. 투표 시작 전인 항목은 종료된 항목보다 앞에 정렬
+		        	    if (startDateA > currentDate && endDateB < currentDate) return -1;
+		        	    if (startDateB > currentDate && endDateA < currentDate) return 1;
+
+		        	    // 4. 현재 진행 중인 항목들 중에서는 종료 시간이 빠른 것부터 정렬
+		        	    if (startDateA <= currentDate && endDateA >= currentDate &&
+		        	        startDateB <= currentDate && endDateB >= currentDate) return endDateA - endDateB;
+
+		        	    // 5. 시작 전인 항목들 중에서는 시작 시간이 빠른 것부터 정렬
+		        	    if (startDateA > currentDate && startDateB > currentDate) return startDateA - startDateB;
+
+		        	    // 6. 종료된 항목들 중에서는 종료 시간이 빠른 것부터 정렬
+		        	    if (endDateA < currentDate && endDateB < currentDate) return endDateA - endDateB;
+
+		        	    // 기본적으로는 변경 없음
+		        	    return 0;
+		        	});
+
+		            
+		            const totalPages = Math.ceil(votes.length / itemsPerPage);
+		            const startIndex = (currentPage - 1) * itemsPerPage;
+		            const endIndex = startIndex + itemsPerPage;
+		            const votesToShow = votes.slice(startIndex, endIndex);
+		
+		            // 임시로 숨기기
+		            votesContainer.innerHTML = "";
+		
+		            fetch("/userinfo", {
+		                method: "GET",
+		                headers: {
+		                    "Authorization": "Bearer " + token
+		                }
+		            })
+		            .then(response => response.json())
+		            .then(userInfo => {
+		                const userType = userInfo.user_type;
+		
+		                votesToShow.forEach(vote => {
+		                    const voteItem = document.createElement("div");
+		                    voteItem.className = "vote-item";
+		                    voteItem.dataset.id = vote.id;
+		                    
+		                    // 기한 확인
+		                    const startDate = new Date(vote.start);
+		                    const endDate = new Date(vote.end);
+		                    if (currentDate < startDate) {
+		                        voteItem.classList.add("before");
+		                        voteItem.addEventListener("click", function () {
+		                        	alert("투표 시작 전입니다.");
+		                        });
+		                    } else if(currentDate > endDate){
+		                    	voteItem.classList.add("expired");
+		                    	voteItem.addEventListener("click", function () {
+		                    		alert("투표가 종료되었습니다. 결과 페이지로 이동합니다.");
+		                            window.location.href = `VoteResults.html?id=${vote.id}`;
+		                        });
+		                    	
+		                    	
+		                    }else{
+		                    	
+		                    	voteItem.addEventListener("click", function () {
+			                        fetch(`/checkvote?voteId=${vote.id}`, {
+			                            method: "GET",
+			                            headers: {
+			                                "Authorization": "Bearer " + token
+			                            }
+			                        })
+			                        .then(response => {
+			                            if (!response.ok) {
+			                                throw new Error("Network response was not ok");
+			                            }
+			                            return response.json();
+			                        })
+			                        .then(data => {
+			                            if (data.hasVoted) {
+			                                alert("이미 투표 하셨습니다.");
+			                                window.location.href = `VoteResults.html?id=${vote.id}`;
+			                            } else {
+			                                window.location.href = `VoteDetails.html?id=${vote.id}`;
+			                            }
+			                        })
+			                        .catch(error => {
+			                            console.error("CheckVote Error:", error);
+			                            alert("서버에서 응답을 받을 수 없습니다.");
+			                        });
+			                    });
+		                    }	                    
+		
+		                    const voteTitle = document.createElement("div");
+		                    voteTitle.className = "vote-title";
+		                    voteTitle.textContent = vote.title;
+		
+		                    const voteDates = document.createElement("div");
+		                    voteDates.className = "vote-dates";
+		                    voteDates.innerHTML = `시작: ${new Date(vote.start).toLocaleString()}<br>종료: ${new Date(vote.end).toLocaleString()}`;
+		
+		                    voteItem.appendChild(voteTitle);
+		                    voteItem.appendChild(voteDates);
+		
+		                    if (userType === "admin") {
+		                        const deleteIcon = document.createElement("i");
+		                        deleteIcon.className = "fas fa-trash delete-icon";
+		                        deleteIcon.addEventListener("click", function (event) {
+		                            event.stopPropagation();
+		                            const confirmDelete = confirm("투표를 삭제하시겠습니까?");
+		                            if (confirmDelete) {
+		                                deleteVote(vote.id);
+		                            }
+		                        });
+		                        voteTitle.appendChild(deleteIcon);
+		                    }
+		
+		                    votesContainer.appendChild(voteItem);
+		                });
+		
+		                renderPagination(totalPages);
+		
+		                // 컨텐츠를 다시 보이게
+		                votesContainer.style.visibility = 'visible';
+		            });
+		        }
+		    })
+		    .catch(error => {
+		        console.error("Error loading votes:", error);
+		        alert("투표 목록을 불러오는 중 오류가 발생했습니다.");
+		    });
+		}
+
+
+        // 투표 삭제 (리스트, 후보자, 레코드 db 셋 다 삭제)
+        function deleteVote(voteId) {
+            const token = localStorage.getItem("jwtToken");
+
+            fetch(`/deletevote?id=${voteId}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert("투표가 성공적으로 삭제되었습니다.");
+                    loadVotes(); // 삭제 후 투표 목록 갱신
+                } else {
+                    alert("투표 삭제에 실패했습니다.");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("오류가 발생했습니다.");
+            });
+        }
+
+        // 페이지네이션 표시 함수
+        function renderPagination(totalPages) {
+            const paginationContainer = document.getElementById("pagination");
+            paginationContainer.innerHTML = "";
+
+            for (let i = 1; i <= totalPages; i++) {
+                const pageSpan = document.createElement("span");
+                pageSpan.textContent = i;
+                pageSpan.addEventListener("click", function () {
+                    currentPage = i;
+                    loadVotes();
+                });
+
+                if (i === currentPage) {
+                    pageSpan.classList.add("active-page");
+                }
+
+                paginationContainer.appendChild(pageSpan);
+            }
+        }
+
+     	// 마이페이지로 이동
+        document.getElementById("info-button").addEventListener("click", function() {
+            window.location.href = "UserInfo.html"; 
+        });
+
+     	// 로그아웃
+        document.getElementById("logout-button").addEventListener("click", function() {
+            if (confirm("정말로 로그아웃하시겠습니까?")) {
+                localStorage.removeItem("jwtToken");
+                alert("로그아웃되었습니다.");
+                window.location.href = "Loggingin.html";
+            }
+        });
+
+        // 투표 등록 페이지로 이동
+        document.getElementById("register-button").addEventListener("click", function () {
+            window.location.href = "CreateVote.html";
+        });
+
+        // 페이지 로드 시 메인 페이지 불러오기
+        window.addEventListener("load", function () {
+            loadMainPage();
+            
+       // 투표 목록을 15초마다 새로고침
+       setInterval(() => {
+                loadVotes();
+            }, 15000);
+        });
+    </script>
+</body>
+</html>

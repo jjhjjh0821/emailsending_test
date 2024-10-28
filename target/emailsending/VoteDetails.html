@@ -1,0 +1,379 @@
+<!-- 연결주소 : http://localhost:8080/VoteDetails.html?id=숫자 -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vote Details</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f4f4;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            background: linear-gradient(135deg, #ffffff 0%, #f7f7f7 100%);
+            display: flex;
+    		flex-direction: column;
+    		box-sizing: border-box;
+        }
+
+        .vote-detail {
+            padding: 40px;
+            display: flex;
+    		flex-direction: column;
+    		height: 100%;
+    		box-sizing: border-box;
+        }
+
+        .vote-title {
+            font-weight: bold;
+            font-size: 1.8rem;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+
+        .vote-dates, .vote-creator {
+            font-size: 0.8rem;
+            color: #888888;
+            margin-top: 10px;
+        }
+
+        #button-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .nav-button {
+            font-size: 12px;
+            padding: 7px 15px; 
+            margin-left: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .nav-button.btn-secondary {
+            background-color: #6c757d;
+            color: #fff;
+        }
+
+        .nav-button.btn-danger {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .nav-button:hover {
+            background-color: #5a6268;
+        }
+
+        .candidates-list {
+            margin-top: 20px;
+            max-height: 300px; 
+    		overflow-y: auto; 
+    		padding-right: 15px; 
+    		padding-left: 15px;
+        }
+        
+		.candidates-list::-webkit-scrollbar {
+		    width: 8px; 
+		}
+		
+		.candidates-list::-webkit-scrollbar-track {
+		    background: #f1f1f1; 
+		    border-radius: 10px; 
+		}
+		
+		.candidates-list::-webkit-scrollbar-thumb {
+		    background: #d3d3d3; 
+		    border-radius: 10px; 
+		}
+		
+		.candidates-list::-webkit-scrollbar-thumb:hover {
+		    background: #a9a9a9; 
+		}
+
+        .candidate-item {
+            padding: 15px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+             
+        }
+        .candidate-item:hover {
+        	background-color: #e3f2fd;
+		    transform: scale(1.05);
+		}
+
+        #back-button {
+            margin-top: 20px;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #back-button:hover {
+            background-color: #0056b3;
+        }
+        
+       .disabled {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .message-container {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="button-container">
+        <button id="info-button" class="btn btn-secondary nav-button">마이페이지</button>
+        <button id="logout-button" class="btn btn-danger nav-button">로그아웃</button>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <div class="vote-detail">
+                <div id="vote-title" class="vote-title">
+                    <i class="fas fa-vote-yea" style="margin-right: 10px; color: #007bff;"></i>
+                    Loading...
+                </div>
+                <div id="vote-dates" class="vote-dates"></div>
+                <div id="vote-creator" class="vote-creator"></div>
+                <div id="candidates" class="candidates-list">Loading candidates...</div>
+                <div id="message-container" class="message-container" style="display: none;"></div>
+                <button id="back-button" class="btn btn-secondary">뒤로가기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        // 투표 세부 사항을 로드
+        function loadVoteDetails() {
+            const voteId = getQueryParam('id');
+            if (!voteId) {
+                alert("투표 ID가 제공되지 않았습니다.");
+                window.location.href = "Mainpage.html";
+                return;
+            }
+
+            const token = localStorage.getItem("jwtToken");
+            if (!token) {
+                alert("로그인이 필요합니다!");
+                window.location.href = "Loggingin.html";
+                return;
+            }
+
+            // 서버에서 투표 세부 정보를 로드
+            fetch(`/getvotes?id=${voteId}`, {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    throw new Error("Unauthorized");
+                } else if (!response.ok) {
+                    throw new Error("Failed to fetch vote details");
+                }
+                return response.json();
+            })
+            .then(data => {
+                const vote = Array.isArray(data) ? data.find(item => item.id === voteId) : data;
+
+                if (!vote) {
+                    throw new Error("No vote found with the provided ID");
+                }
+
+                document.getElementById("vote-title").innerHTML = `<i class="fas fa-vote-yea" style="margin-right: 10px; color: #007bff;"></i> ${vote.title}`;
+                document.getElementById("vote-dates").innerHTML = `시작: ${new Date(vote.start).toLocaleString()}<br>종료: ${new Date(vote.end).toLocaleString()}`;
+                document.getElementById("vote-creator").textContent = `투표 작성자: ${vote.creatorName}`;
+
+             	// 시작 시간 이전 or 종료 시간이 이후에 투표 버튼 비활성화
+                const now = new Date();
+                const startDate = new Date(vote.start);
+                const endDate = new Date(vote.end);
+                
+                if (now < startDate || now > endDate) {
+                    document.querySelectorAll(".candidate-item").forEach(item => {
+                        item.classList.add("disabled");
+                    });
+                    
+                 	// candidates 컨테이너 숨기기
+                    const candidatesContainer = document.getElementById("candidates");
+                    candidatesContainer.style.display = "none";
+
+                    const messageContainer = document.getElementById("message-container");
+                    messageContainer.style.display = "block";
+                    
+                    if (now < startDate) {
+                    	messageContainer.textContent = "투표 시작 전입니다.";
+                    } else {
+                    	messageContainer.textContent = "투표 기간이 종료되었습니다.";
+                    }
+                    
+                } else {
+                    // 후보자 정보를 로드
+                    loadCandidates(voteId);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert(error.message);
+                window.location.href = "Mainpage.html";
+            });
+        }
+
+
+        // 후보자 정보를 로드
+        function loadCandidates(voteId) {
+		    const token = localStorage.getItem("jwtToken");
+		    
+		    fetch(`/getcandidates?voteId=${voteId}`, {
+		        method: "GET",
+		        headers: {
+		            "Authorization": "Bearer " + token
+		        }
+		    })
+		    .then(response => {
+		        if (!response.ok) {
+		            throw new Error("Failed to fetch candidates");
+		        }
+		        return response.json();
+		    })
+		    .then(candidates => {
+		        const candidatesContainer = document.getElementById("candidates");
+		        candidatesContainer.innerHTML = "";
+		        
+		        if (candidates.length === 0) {
+		            candidatesContainer.textContent = "등록된 후보자가 없습니다.";
+		        } else {
+    		     	
+		            candidates.forEach(candidate => {
+		                const candidateItem = document.createElement("div");
+		                candidateItem.className = "candidate-item";
+		                candidateItem.textContent = `기호 ${candidate.symbol}번 ${candidate.name}`;
+		                
+		                // 투표시 함수 동작
+		                candidateItem.addEventListener("click", function() {
+							    
+							    const confirmed = confirm(`기호 ${candidate.symbol}번 ${candidate.name} 에게 투표하시겠습니까?`);
+						        if (confirmed) {
+						            voteForCandidate(voteId, candidate.symbol);
+						        }
+			                });
+		
+		                candidatesContainer.appendChild(candidateItem);
+		            });
+		        }
+		        
+		    })
+		    .catch(error => {
+		        console.error("Error:", error);
+		        document.getElementById("candidates").textContent = "후보자 정보를 불러오는 데 실패했습니다.";
+		    });
+		}
+        
+        // 투표 함수
+        function voteForCandidate(voteId, symbol) {
+		    const token = localStorage.getItem("jwtToken");
+		    if (!token) {
+		        alert("로그인이 필요합니다!");
+		        window.location.href = "Loggingin.html";
+		        return;
+		    }
+		
+		    fetch(`/voteForCandidate?voteId=${voteId}&symbol=${symbol}`, {
+		        method: "POST",
+		        headers: {
+		            "Authorization": "Bearer " + token,
+		            "Content-Type": "application/json"
+		        }
+		    })
+		    .then(response => {
+		        if (response.status === 401) {
+		            throw new Error("Unauthorized");
+		        } else if (response.status === 403) {
+		        	alert("이미 투표 하셨습니다.");
+		            window.location.href = `VoteResults.html?id=${voteId}`;
+		            throw new Error("이미 투표 하셨습니다.");
+		        } else if (!response.ok) {
+		            throw new Error("Failed to cast vote");
+		        }
+		        return response.json();
+		    })
+		    .then(data => {
+		    	alert('투표가 완료되었습니다.');
+		        window.location.href = `VoteResults.html?id=${voteId}`;  // 결과 화면으로 리디렉션
+		    })
+		    .catch(error => {
+		        console.error("Error:", error);
+		        if (error.message !== "이미 투표 하셨습니다.") {
+		            alert(error.message);
+		        }
+		    });
+		}
+
+        document.getElementById("back-button").addEventListener("click", function() {
+            window.location.href = "Mainpage.html";
+        });
+
+        document.getElementById("info-button").addEventListener("click", function() {
+            window.location.href = "UserInfo.html"; 
+        });
+
+        document.getElementById("logout-button").addEventListener("click", function() {
+            if (confirm("정말로 로그아웃하시겠습니까?")) {
+                localStorage.removeItem("jwtToken");
+                alert("로그아웃되었습니다.");
+                window.location.href = "Loggingin.html";
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", loadVoteDetails);
+    </script>
+</body>
+</html>
+
+

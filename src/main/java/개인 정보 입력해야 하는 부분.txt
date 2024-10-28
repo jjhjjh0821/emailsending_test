@@ -1,0 +1,23 @@
+개인 정보 입력해야 하는 부분 (나중에 application.properties로 합칠게요)
+
+1. login
+  1. db.java - dburl, dbusername, dbpassword
+  2. LoginServlet.java - dburl, dbusername, dbpassword
+
+2. mail
+  1. Emailsender.java - transport.connect("smtp.gmail.com", "구글이메일주소", "구글앱비밀번호");
+
+3. user
+  1. DeleteUserServlet.java - dburl, dbusername, dbpassword
+  2. GetECUsersServlet.java - DB_URL, DB_USER, DB_PASSWORD
+  3. RequestRoleServlet.java - DB_URL, DB_USER, DB_PASSWORD
+  4. UpdateInfoServlet.java - dburl, dbusername, dbpassword 2번
+  5. UserInfoServlet.java - DB_URL, DB_USER, DB_PASSWORD
+
+4. vote
+  1. Candidatesdb.java  - dbUsername, dbPassword 6번
+  2. GetCandidatesServlet.java - DB_URL, DB_USER, DB_PASSWORD
+  3. GetVotesServlet.java - DB_URL, DB_USER, DB_PASSWORD
+  4. VoteListdb.java - dburl, dbusername, dbpassword 2번
+
+

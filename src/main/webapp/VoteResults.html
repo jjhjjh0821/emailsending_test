@@ -1,0 +1,284 @@
+<!-- 연결주소 : http://localhost:8080/VoteResults.html?id=숫자 -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>투표 결과</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #f4f4f4;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            background: linear-gradient(135deg, #ffffff 0%, #f7f7f7 100%);
+        }
+
+        .results-detail {
+            padding: 40px;
+            position: relative;
+        }
+
+        .results-title {
+            font-weight: bold;
+            font-size: 1.8rem;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+
+        .results-chart {
+            margin-top: 15px;
+        }
+
+        #button-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .nav-button {
+            font-size: 12px;
+            padding: 7px 15px;
+            margin-left: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .nav-button.btn-secondary {
+            background-color: #6c757d;
+            color: #fff;
+        }
+
+        .nav-button.btn-danger {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .nav-button:hover {
+            background-color: #5a6268;
+        }
+
+        #back-button {
+            margin-top: 20px;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #back-button:hover {
+            background-color: #0056b3;
+        }
+
+        .winner {
+            margin-top: 30px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .winner i {
+            margin-right: 10px;
+            color: #007bff;
+        }
+
+        .results-text {
+            margin-top: 20px;
+            font-size: 1.1rem;
+        }
+
+        .results-text .candidate-item {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="button-container">
+        <button id="info-button" class="btn btn-secondary nav-button">마이페이지</button>
+        <button id="logout-button" class="btn btn-danger nav-button">로그아웃</button>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <div class="results-detail">
+                <div class="results-title">
+                    <i class="fas fa-poll" style="margin-right: 10px; color: #007bff;"></i>
+                    투표 결과
+                </div>
+                <div id="results-chart" class="results-chart">Loading results...</div>
+                <div id="winner-text" class="results-text"></div>
+                <button id="back-button" class="btn btn-secondary">메인으로</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        function loadVoteResults() {
+            const voteId = getQueryParam('id');
+            if (!voteId) {
+                alert("투표 ID가 제공되지 않았습니다.");
+                window.location.href = "Mainpage.html";
+                return;
+            }
+
+            const token = localStorage.getItem("jwtToken");
+            if (!token) {
+                alert("로그인이 필요합니다!");
+                window.location.href = "Loggingin.html";
+                return;
+            }
+
+            fetch(`/emailsending/getresults?voteId=${voteId}`, {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    throw new Error("Unauthorized");
+                } else if (!response.ok) {
+                    throw new Error("Failed to fetch results");
+                }
+                return response.json();
+            })
+            .then(data => {
+                const totalVotes = data.totalVotes;
+                const candidates = data.candidates;
+
+                const resultsChart = document.getElementById("results-chart");
+                resultsChart.innerHTML = `
+                    <canvas id="resultsCanvas"></canvas>
+                `;
+
+                const ctx = document.getElementById('resultsCanvas').getContext('2d');
+
+                // Chart.js로 차트 생성
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: candidates.map(candidate => candidate.name),
+                        datasets: [{
+                            label: '득표수',
+                            data: candidates.map(candidate => candidate.votes_cnt),
+                            backgroundColor: candidates.map(candidate => 
+                                candidate.votes_cnt === Math.max(...candidates.map(c => c.votes_cnt)) ? '#007bff' : '#6c757d'
+                            ),
+                            borderColor: 'rgba(0, 0, 0, 0.1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tooltipItem) {
+                                        const total = tooltipItem.dataset.data.reduce((a, b) => a + b, 0);
+                                        const value = tooltipItem.raw;
+                                        const percentage = (value / total * 100).toFixed(2) + '%';
+                                        return tooltipItem.label + ': ' + value + ' (' + percentage + ')';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1,
+                                    callback: function(value) {
+                                        return Number.isInteger(value) ? value : '';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 당선자 표시
+                const maxVotes = Math.max(...candidates.map(c => c.votes_cnt));
+                const winners = candidates.filter(c => c.votes_cnt === maxVotes);
+
+                const winnerText = document.getElementById("winner-text");
+                if (totalVotes === 0) {
+                    winnerText.innerHTML = `
+                        <div class="winner">
+                            <i class="fas fa-trophy"></i>
+                            당선자 없음
+                        </div>
+                    `;
+                } else {
+                    winnerText.innerHTML = `
+                        <div class="winner">
+                            <i class="fas fa-trophy"></i>
+                            당선자: ${winners.map(w => w.name).join(', ')}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                document.getElementById("results-chart").textContent = "결과를 불러오는 데 실패했습니다.";
+            });
+        }
+
+        document.getElementById("back-button").addEventListener("click", function() {
+            window.location.href = "Mainpage.html";
+        });
+
+        document.getElementById("info-button").addEventListener("click", function() {
+            window.location.href = "UserInfo.html"; 
+        });
+
+        document.getElementById("logout-button").addEventListener("click", function() {
+            if (confirm("정말로 로그아웃하시겠습니까?")) {
+                localStorage.removeItem("jwtToken");
+                alert("로그아웃되었습니다.");
+                window.location.href = "Loggingin.html";
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", loadVoteResults); 
+    </script>
+</body>
+</html>

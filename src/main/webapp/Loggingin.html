@@ -1,0 +1,271 @@
+<!-- 연결주소 : http://localhost:8080/Loggingin.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>로그인</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background: #f4f4f4;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+        }
+        .card {
+            width: 100%;
+            max-width: 400px;
+            padding: 60px 20px 20px 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #ffffff 0%, #f7f7f7 100%);
+            overflow: hidden;
+            text-align: center;
+        }
+        .card-title {
+            font-weight: bold;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            position: relative;
+            width: 70%; 
+            margin: 0 auto;
+            margin-bottom: 15px;
+        }
+        .form-control {
+            width: 100%; 
+            padding-left: 40px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .form-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #007bff;
+            font-size: 18px;
+        }
+        .btn-primary {
+            width: 70%;
+            max-width: 300px; 
+            border-radius: 25px;
+            background-color: #007bff;
+            border: none;
+            padding: 10px;
+            font-weight: bold;
+            margin: 15px auto; 
+            display: block;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .link {
+            color: #007bff;
+            font-size: 0.9rem;
+            text-decoration: none;
+            display: block;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
+        .link-primary {
+            margin-top: 40px;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+ 
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 400px;
+            padding: 20px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #ffffff 0%, #f7f7f7 100%);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+        .popup-header {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+        .popup-body {
+            margin-bottom: 15px;
+        }
+        .popup-footer {
+            text-align: right;
+        }
+        .popup-button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .popup-button:hover {
+            background-color: #0056b3;
+        }
+        .popup-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h5 class="card-title">로그인</h5>
+        <form action="/emailsending/login" method="POST" onsubmit="login(event)">
+            <div class="form-group">
+                <i class="fas fa-envelope"></i>
+                <input type="text" class="form-control" id="id" name="id" placeholder="Email" />
+            </div>
+            <div class="form-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" class="form-control" id="pw" name="pw" placeholder="Password" />
+            </div>
+            <button type="submit" class="btn btn-primary">LOGIN</button>
+            <a class="link" onclick="showPasswordResetPopup()">비밀번호 찾기</a>
+            <a class="link link-primary" onclick="redirectToSignUp()">회원가입 →</a>
+        </form>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <!-- 비밀번호 찾기 팝업 -->
+    <div class="popup" id="passwordResetPopup">
+        <button class="popup-close" onclick="closePopup('passwordResetPopup')">&times;</button>
+        <div class="popup-header">비밀번호 찾기</div>
+        <div class="popup-body">
+            비밀번호 찾기 기능은 아직 구현되지 않았습니다.
+        </div>
+        <div class="popup-footer">
+            <button class="popup-button" onclick="closePopup('passwordResetPopup')">닫기</button>
+        </div>
+    </div>
+
+    <!-- 알림 팝업 -->
+    <div class="popup" id="alertPopup">
+        <button class="popup-close" onclick="closePopup('alertPopup')">&times;</button>
+        <div class="popup-header">로그인 실패</div>
+        <div class="popup-body" id="alertMessage"></div>
+        <div class="popup-footer">
+            <button class="popup-button" onclick="closePopup('alertPopup')">닫기</button>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+    <script>
+        function redirectToSignUp() {
+            window.location.href = "Checkmail.html";
+        }
+
+        function hashPassword(password) {
+            return crypto.subtle.digest("SHA-256", new TextEncoder().encode(password))
+                .then(hash => {
+                    let hexString = "";
+                    const hashArray = Array.from(new Uint8Array(hash));
+                    hashArray.forEach(b => {
+                        hexString += b.toString(16).padStart(2, '0');
+                    });
+                    return hexString;
+                });
+        }
+
+        function login(event) {
+            event.preventDefault();
+                
+            var email = document.getElementById("id").value;
+            var password = document.getElementById("pw").value;
+            
+            // AJAX 요청에 대한 로그 추가
+            hashPassword(password).then(hashedPassword => {
+        	// 해시된 비밀번호가 생성된 후에 로그 출력
+       		console.log("AJAX request:", JSON.stringify({
+            	email: email,
+            	hashedPassword: hashedPassword
+        	}));
+        	
+       		console.log("Hashed Password:", hashedPassword);  // 해시된 비밀번호 로그
+                $.ajax({
+                    url: "/emailsending/login",
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        email: email,
+                        hashedpassword: hashedPassword
+                    },
+                    success: function(response, textStatus, xhr) {
+                        if (xhr.status === 200) {
+                            localStorage.setItem("jwtToken", response.trim());
+                            window.location.href = "Mainpage.html";
+                        } else {
+                            showAlertPopup("로그인 실패. 이메일 또는 비밀번호를 확인해 주세요.");
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Error:", error);
+                        showAlertPopup("로그인 실패. 나중에 다시 시도해 주세요." + xhr.responseText);
+                    }
+                });
+                }).catch(err => {
+                    console.error("Hashing error:", err);
+                    showAlertPopup("비밀번호 해시 생성 중 오류가 발생했습니다.");
+                });
+        }
+            
+        function showAlertPopup(message) {
+            document.getElementById("alertMessage").textContent = message;
+            document.getElementById("alertPopup").style.display = 'block';
+            document.getElementById("overlay").style.display = 'block';
+        }
+
+        function showPasswordResetPopup() {
+            document.getElementById("passwordResetPopup").style.display = 'block';
+            document.getElementById("overlay").style.display = 'block';
+        }
+
+        function closePopup(popupId) {
+            document.getElementById(popupId).style.display = 'none';
+            document.getElementById("overlay").style.display = 'none';
+        }
+    </script>
+</body>
+</html>

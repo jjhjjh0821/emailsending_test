@@ -1,0 +1,334 @@
+<!-- 연결주소 : http://localhost:8080/AddCandidates.html -->
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>후보자 등록</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #f4f4f4;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+        }
+
+        #button-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .nav-button {
+            font-size: 12px;
+            padding: 7px 15px;
+            margin-left: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .nav-button.btn-secondary {
+            background-color: #6c757d;
+            color: #fff;
+        }
+
+        .nav-button.btn-danger {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .nav-button:hover {
+            opacity: 0.8;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            background: linear-gradient(135deg, #ffffff 0%, #f7f7f7 100%);
+        }
+
+        .card-title {
+            font-weight: bold;
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .divider {
+            border-top: 1px solid #d6d6d6;
+            margin: 20px 0;
+        }
+
+        .form-group label {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .btn-primary, .btn-add-candidate {
+            font-size: 1rem;
+            padding: 10px 20px;
+            display: block;
+            width: 100%;
+            border-radius: 25px;
+        }
+
+        .btn-add-candidate {
+        	margin-top: 5px;
+            margin-bottom: 10px;
+            background-color: #a0a0a0;
+            border-color: #a0a0a0;
+        	color: #fff;
+        }
+        
+        .btn-add-candidate:hover {
+	        background-color: #6c757d;
+	        border-color: #6c757d;
+	    }
+
+        .candidate-input {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            margin-left: 15px;
+            margin-right: 15px;
+        }
+
+        .candidate-input label {
+            margin-right: 10px;
+        }
+
+        .candidate-input input {
+            flex: 1;
+        }
+
+        .btn-remove-candidate {
+            margin-left: 10px;
+        }
+
+        .bold-text {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        #candidates-container {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        #candidates-container::-webkit-scrollbar {
+            width: 8px; 
+        }
+
+        #candidates-container::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 10px;
+        }
+
+        #candidates-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1; 
+            border-radius: 10px;
+        }
+
+        #candidates-container::-webkit-scrollbar-thumb:hover {
+            background: #a0a0a0;
+        }
+    </style>
+</head>
+<body>
+    <div id="button-container">
+        <button id="info-button" class="btn nav-button btn-secondary">마이페이지</button>
+        <button id="logout-button" class="btn nav-button btn-danger">로그아웃</button>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-body">
+                <div class="card-title" id="vote-title"></div>
+                <div id="vote-id" style="display:none;"></div>
+                <div class="text-center mb-2 bold-text">후보자 등록</div>
+                <hr class="divider">
+                <form id="candidates-form">
+                    <div id="candidates-container">
+                        <div class="form-group candidate-input">
+                            <label for="candidate-1">기호 1번</label>
+                            <input type="text" class="form-control" id="candidate-1" required>
+                            <button type="button" class="btn btn-danger btn-remove-candidate" style="display:none;">삭제</button>
+                        </div>
+                        <div class="form-group candidate-input">
+                            <label for="candidate-2">기호 2번</label>
+                            <input type="text" class="form-control" id="candidate-2" required>
+                            <button type="button" class="btn btn-danger btn-remove-candidate" style="display:none;">삭제</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-add-candidate" id="add-candidate-button">후보자 추가</button>
+                    <button type="submit" class="btn btn-primary" id="submit-button" disabled>등록</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            checkAuthentication();
+            loadVoteDetails();
+            updateRemoveButtons();
+        });
+
+        function checkAuthentication() {
+            const token = localStorage.getItem("jwtToken");
+
+            if (!token) {
+                alert("로그인이 필요합니다!");
+                window.location.href = "Loggingin.html";
+            }
+        }
+
+        function loadVoteDetails() {
+            const titleElement = document.getElementById("vote-title");
+            const idElement = document.getElementById("vote-id");
+            const storedTitle = localStorage.getItem("voteTitle");
+            const storedId = localStorage.getItem("voteId");
+
+            if (storedTitle) {
+                titleElement.textContent = storedTitle;
+            } else {
+                titleElement.textContent = "투표 제목이 없습니다.";
+            }
+            
+            if (storedId) {
+                idElement.textContent = storedId;
+            } else {
+                idElement.textContent = "투표 ID가 없습니다.";
+            }
+        }
+
+        function addCandidateInput() {
+            const candidatesContainer = document.getElementById("candidates-container");
+            const numInputs = candidatesContainer.getElementsByClassName("candidate-input").length;
+            const newInputNumber = numInputs + 1;
+
+            const newCandidateDiv = document.createElement("div");
+            newCandidateDiv.className = "form-group candidate-input";
+
+            const newCandidateLabel = document.createElement("label");
+            newCandidateLabel.setAttribute("for", `candidate-${newInputNumber}`);
+            newCandidateLabel.textContent = `기호 ${newInputNumber}번`;
+
+            const newCandidateInput = document.createElement("input");
+            newCandidateInput.type = "text";
+            newCandidateInput.className = "form-control";
+            newCandidateInput.id = `candidate-${newInputNumber}`;
+            newCandidateInput.required = true;
+
+            const newRemoveButton = document.createElement("button");
+            newRemoveButton.type = "button";
+            newRemoveButton.className = "btn btn-danger btn-remove-candidate";
+            newRemoveButton.textContent = "삭제";
+            newRemoveButton.addEventListener("click", function() {
+                candidatesContainer.removeChild(newCandidateDiv);
+                updateRemoveButtons();
+                updateSubmitButton();
+            });
+
+            newCandidateDiv.appendChild(newCandidateLabel);
+            newCandidateDiv.appendChild(newCandidateInput);
+            newCandidateDiv.appendChild(newRemoveButton);
+            candidatesContainer.appendChild(newCandidateDiv);
+
+            updateRemoveButtons();
+            updateSubmitButton();
+        }
+
+        function updateRemoveButtons() {
+            const candidateDivs = document.querySelectorAll("#candidates-container .candidate-input");
+            candidateDivs.forEach((div, index) => {
+                const removeButton = div.querySelector(".btn-remove-candidate");
+                removeButton.style.display = (candidateDivs.length > 2 && index === candidateDivs.length - 1) ? "inline-block" : "none";
+            });
+        }
+
+        function validateForm() {
+            const candidateInputs = document.querySelectorAll("#candidates-container input");
+            const allFilled = Array.from(candidateInputs).every(input => input.value.trim() !== "");
+
+            return allFilled;
+        }
+
+        function updateSubmitButton() {
+            const submitButton = document.getElementById("submit-button");
+            submitButton.disabled = !validateForm();
+        }
+
+        document.getElementById("add-candidate-button").addEventListener("click", addCandidateInput);
+
+        document.getElementById("candidates-form").addEventListener("input", updateSubmitButton);
+
+        document.getElementById("candidates-form").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            if (!validateForm()) return;
+
+            const candidateInputs = document.querySelectorAll("#candidates-container input");
+            const candidates = Array.from(candidateInputs).map(input => input.value.trim()).filter(value => value);
+
+            if (candidates.length > 0) {
+                const requestData = {
+                    candidates: candidates
+                };
+
+                $.ajax({
+                    url: "/emailsending/addcandidates",
+                    type: "POST",
+                    contentType: "application/json; charset=UTF-8",
+                    headers: {
+                        "Authorization": "Bearer " + localStorage.getItem("jwtToken"),
+                        "vote-id": localStorage.getItem("voteId"),
+                        "vote-title": encodeURIComponent(localStorage.getItem("voteTitle") || "")
+                    },
+                    data: JSON.stringify(requestData),
+                    success: function(response) {
+                        alert("후보자 등록이 완료되었습니다.");
+                        window.location.href = "Mainpage.html";
+                    },
+                    error: function(xhr, status, error) {
+                        alert("후보자 등록에 실패했습니다.");
+                        console.error("오류:", error);
+                    }
+                });
+            } else {
+                alert("후보자를 입력하세요.");
+            }
+        });
+
+        document.getElementById("info-button").addEventListener("click", function() {
+            window.location.href = "UserInfo.html";
+        });
+
+        document.getElementById("logout-button").addEventListener("click", function() {
+            if (confirm("정말로 로그아웃하시겠습니까?")) {
+                localStorage.removeItem("jwtToken");
+                alert("로그아웃되었습니다.");
+                window.location.href = "Loggingin.html";
+            }
+        });
+    </script>
+</body>
+</html>

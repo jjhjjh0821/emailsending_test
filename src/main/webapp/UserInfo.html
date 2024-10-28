@@ -1,0 +1,557 @@
+<!-- 연결주소 : http://localhost:8080/UserInfo.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마이 페이지</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f4f4;;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            background: linear-gradient(135deg, #ffffff 0%, #f7f7f7 100%);
+        }
+
+        .card-body {
+            padding: 40px;
+        }
+
+        .card-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .menu-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .menu-item {
+            cursor: pointer;
+            padding: 10px 20px;
+            font-weight: bold;
+            border-bottom: 3px solid transparent;
+            transition: border-color 0.3s, color 0.3s;
+            color: #333;
+            margin: 0 10px;
+        }
+
+        .menu-item.active {
+            border-bottom: 3px solid #007bff;
+            color: #007bff;
+        }
+
+        .info-box {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+        }
+
+        .info-box i {
+            font-size: 20px;
+            margin-right: 15px;
+            color: #007bff;
+        }
+
+        .info-box p {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .info-box .info-label {
+            margin-right: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .edit-button {
+            font-size: 12px;
+            padding: 5px 10px;
+            margin-left: auto;
+            background-color: #007bff; 
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .edit-button:hover {
+            background-color: #0056b3;
+        }
+
+        #delete-account {
+            text-align: right;
+            font-size: 14px;
+            color: #d3d3d3;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 20px;
+            margin-right: 10px;
+        }
+
+        #request-role {
+            font-size: 12px;
+            padding: 5px 10px;
+            margin-left: auto;
+            background-color: #007bff; 
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #request-role:hover {
+            background-color: #0056b3;
+        }
+
+        #button-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        #logout-button {
+            font-size: 12px;
+            padding: 7px 15px;
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #logout-button:hover {
+            background-color: #c82333;
+        }
+
+        @media (max-width: 767px) {
+            .card {
+                width: 90%;
+            }
+
+            .card-body {
+                padding: 20px;
+            }
+        }
+        
+        #ec-users-container {
+	        display: grid;
+	        grid-template-columns: repeat(2, 1fr);
+	        gap: 10px;
+	        grid-row-gap: 5px;
+	    }
+    
+	    .ec-user-card {
+	        background: #fff;
+	        border-radius: 10px;
+	        padding: 15px;
+	        margin: 5px 0;
+	        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+	        display: flex;
+	        align-items: center;
+	        transition: transform 0.3s, box-shadow 0.3s;
+	    }
+	
+	    .ec-user-card:hover {
+	        transform: translateY(-5px);
+	        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+	    }
+	
+	    .ec-user-icon {
+	        font-size: 30px;
+	        margin-left: 10px;
+	        margin-right: 15px;
+	        color: #007bff;
+	    }
+	
+	    .ec-user-info {
+	        display: flex;
+	        flex-direction: column;
+	        justify-content: center;
+	    }
+	
+	    .ec-user-info span {
+	        font-weight: bold;
+	        color: #333;
+	    }
+	
+	    .ec-user-info .user-email {
+	        font-size: 0.8rem;
+	        color: #666;
+	    }
+	
+	    .ec-user-info .user-dob {
+	        font-size: 0.8rem;
+	        color: #666;
+	    }
+    
+    </style>
+</head>
+<body>
+    <div id="button-container">
+        <button id="logout-button" class="btn">로그아웃</button>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">마이 페이지</h5>
+            <div class="menu-container">
+                <div id="menu-info" class="menu-item active">내정보</div>
+                <div id="menu-two" class="menu-item" style="display: none;">선관위 관리</div>
+            </div>
+            
+            <div id="content-container">
+                <div id="user-info" class="mt-3">
+                    <div class="info-box">
+                        <i class="fas fa-user"></i>
+                        <p>
+                            <span class="info-label">이름:</span>
+                            <span id="name"></span>
+                        </p>
+                    </div>
+                    <div class="info-box">
+                        <i class="fas fa-calendar-alt"></i>
+                        <p>
+                            <span class="info-label">생일:</span>
+                            <span id="dob"></span>
+                        </p>
+                    </div>
+                    <div class="info-box">
+                        <i class="fas fa-envelope"></i>
+                        <p>
+                            <span class="info-label">이메일:</span>
+                            <span id="email"></span>
+                            <button class="edit-button" id="edit-email">수정</button>
+                        </p>
+                    </div>
+                    <div class="info-box">
+                        <i class="fas fa-lock"></i>
+                        <p>
+                            <span class="info-label">비밀번호:</span>
+                            <span id="password">*****</span>
+                            <button class="edit-button" id="edit-password">수정</button>
+                        </p>
+                    </div>
+                    <div class="info-box">
+                        <i class="fas fa-user-shield"></i>
+                        <p>
+                            <span class="info-label">권한:</span>
+                            <span id="user_type"></span>
+                            <button id="request-role" style="display: none;">권한 신청</button>
+                        </p>
+                    </div>
+                    <div id="delete-account">탈퇴하기</div>
+                </div>
+            </div>
+            
+            <div id="ec-users-list" style="display: none;">
+			    <div id="ec-users-container">
+				</div>
+        	</div>
+    	</div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const token = localStorage.getItem("jwtToken");
+            if (!token) {
+                alert("로그인이 필요합니다!");
+                window.location.href = "Loggingin.html";
+                return;
+            }
+
+            const loadUserInfo = () => {
+                $.ajax({
+                    url: "/emailsending/userinfo",
+                    type: "GET",
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    },
+                    success: function (response) {
+                        document.getElementById("email").textContent = response.email;
+                        document.getElementById("name").textContent = response.name;
+                        document.getElementById("dob").textContent = response.dob;
+                        document.getElementById("user_type").textContent = response.user_type;
+
+                        // 권한 신청 버튼의 표시 여부를 결정
+                        if (response.user_type === "user") {
+                            // 역할 신청 상태 확인
+                            $.ajax({
+                                url: "/emailsending/requestRole",
+                                type: "GET",
+                                headers: {
+                                    "Authorization": "Bearer " + token
+                                },
+                                success: function (checkResponse) {
+                                    document.getElementById("request-role").style.display = "inline-block";
+                                    if (checkResponse.message === "이미 권한 신청을 하셨습니다.") {
+                                        const button = document.getElementById("request-role");
+                                        button.textContent = "권한 신청중";
+                                        button.style.backgroundColor = "#d3d3d3";
+                                        button.style.cursor = "not-allowed";
+                                        button.disabled = true;
+                                    }
+                                }
+                            });
+                        } else {
+                            document.getElementById("request-role").style.display = "none";
+                        }
+
+                        if (response.user_type === "admin") {
+                            document.getElementById("menu-two").style.display = "block";
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("오류:", error);
+                        alert("사용자 정보를 가져오는데 실패했습니다.");
+                        window.location.href = "Mainpage.html";
+                    }
+                });
+            };
+
+            loadUserInfo();
+
+            document.getElementById("content-container").addEventListener("click", function (event) {
+                if (event.target && event.target.id === "edit-email") {
+                    const newEmail = prompt("새 이메일을 입력하세요:", document.getElementById("email").textContent);
+                    if (newEmail) {
+                        $.ajax({
+                            url: "/emailsending/updateUserInfo",
+                            type: "POST",
+                            headers: {
+                                "Authorization": "Bearer " + token,
+                                "Content-Type": "application/x-www-form-urlencoded"
+                            },
+                            data: { email: newEmail },
+                            success: function () {
+                                alert("이메일이 업데이트되었습니다!");
+                                loadUserInfo();
+                            },
+                            error: function () {
+                                alert("이메일 업데이트에 실패했습니다.");
+                                console.error("Error:", error);
+                            }
+                        });
+                    }
+                }
+
+                if (event.target && event.target.id === "edit-password") {
+                    const newPassword = prompt("새 비밀번호를 입력하세요:");
+                    if (newPassword) {
+                        $.ajax({
+                            url: "/emailsending/updateUserInfo",
+                            type: "POST",
+                            headers: {
+                                "Authorization": "Bearer " + token,
+                                "Content-Type": "application/x-www-form-urlencoded"
+                            },
+                            data: { password: newPassword },
+                            success: function () {
+                                alert("비밀번호가 업데이트되었습니다!");
+                            },
+                            error: function () {
+                                alert("비밀번호 업데이트에 실패했습니다.");
+                                console.error("Error:", error);
+                            }
+                        });
+                    }
+                }
+
+                if (event.target && event.target.id === "delete-account") {
+                    if (confirm("정말로 탈퇴하시겠습니까?")) {
+                        const email = document.getElementById("email").textContent;
+                        $.ajax({
+                            url: "/emailsending/deleteUser",
+                            type: "DELETE",
+                            headers: {
+                                "Authorization": "Bearer " + token,
+                                "Content-Type": "application/json"
+                            },
+                            data: JSON.stringify({ email: email }),
+                            success: function () {
+                                alert("탈퇴가 완료되었습니다.");
+                                localStorage.removeItem("jwtToken");
+                                window.location.href = "Loggingin.html";
+                            },
+                            error: function () {
+                                alert("탈퇴 처리에 실패했습니다.");
+                            }
+                        });
+                    }
+                }
+
+                if (event.target && event.target.id === "request-role") {
+                    if (confirm("권한을 신청하시겠습니까?")) {
+                        const name = document.getElementById("name").textContent;
+                        const dob = document.getElementById("dob").textContent;
+                        const email = document.getElementById("email").textContent;
+
+                        $.ajax({
+                            url: "/emailsending/requestRole",
+                            type: "POST",
+                            headers: {
+                                "Authorization": "Bearer " + token,
+                                "Content-Type": "application/json"
+                            },
+                            data: JSON.stringify({ name: name, email: email, dob: dob }),
+                            success: function () {
+                                const button = document.getElementById("request-role");
+                                button.textContent = "권한 신청중";
+                                button.style.backgroundColor = "#d3d3d3";
+                                button.style.cursor = "not-allowed";
+                                button.disabled = true;
+                                alert("권한 신청이 완료되었습니다.");
+                            },
+                            error: function () {
+                                alert("권한 신청에 실패했습니다.");
+                                console.error("Error:", error);
+                            }
+                        });
+                    }
+                }
+            });
+
+            document.getElementById("menu-info").addEventListener("click", function () {
+                document.getElementById("menu-info").classList.add("active");
+                document.getElementById("menu-two").classList.remove("active");
+                
+                // 선관위 관리 정보 숨기기
+                document.getElementById("ec-users-list").style.display = "none";
+
+                // user-info 보이기
+                document.getElementById("user-info").style.display = "block";
+                
+                document.getElementById("content-container").innerHTML = `
+                    <div id="user-info" class="mt-3">
+                        <div class="info-box">
+                            <i class="fas fa-user"></i>
+                            <p>
+                                <span class="info-label">이름:</span>
+                                <span id="name"></span>
+                            </p>
+                        </div>
+                        <div class="info-box">
+                            <i class="fas fa-calendar-alt"></i>
+                            <p>
+                                <span class="info-label">생일:</span>
+                                <span id="dob"></span>
+                            </p>
+                        </div>
+                        <div class="info-box">
+                            <i class="fas fa-envelope"></i>
+                            <p>
+                                <span class="info-label">이메일:</span>
+                                <span id="email"></span>
+                                <button class="edit-button" id="edit-email">수정</button>
+                            </p>
+                        </div>
+                        <div class="info-box">
+                            <i class="fas fa-lock"></i>
+                            <p>
+                                <span class="info-label">비밀번호:</span>
+                                <span id="password">*****</span>
+                                <button class="edit-button" id="edit-password">수정</button>
+                            </p>
+                        </div>
+                        <div class="info-box">
+                            <i class="fas fa-user-shield"></i>
+                            <p>
+                                <span class="info-label">권한:</span>
+                                <span id="user_type"></span>
+                                <button id="request-role" style="display: none;">권한 신청</button>
+                            </p>
+                        </div>
+                        <div id="delete-account">탈퇴하기</div>
+                    </div>
+                `;
+                loadUserInfo();
+            });
+
+            document.getElementById("menu-two").addEventListener("click", function () {
+                document.getElementById("menu-info").classList.remove("active");
+                document.getElementById("menu-two").classList.add("active");
+                
+                // 기존 user-info 숨기기
+                document.getElementById("user-info").style.display = "none";
+
+                // EC 사용자 목록 보이기
+                document.getElementById("ec-users-list").style.display = "block";
+
+                // EC 사용자 목록을 가져오는 AJAX 요청
+                $.ajax({
+				    url: "/emailsending/getECusers",
+				    type: "GET",
+				    headers: {
+				        "Authorization": "Bearer " + token,
+				    },
+				    success: function (response) {
+				        const usersContainer = document.getElementById("ec-users-container");
+				        usersContainer.innerHTML = ""; // 기존 목록 초기화
+				
+				        response.users.forEach(user => {
+				            const userBlock = `
+				                <div class="ec-user-card">
+				                    <i class="fas fa-user ec-user-icon"></i>
+				                    <div class="ec-user-info">
+				                        <span class="user-name">${user.name}</span>
+				                        <span class="user-dob">${user.dob}</span>
+				                        <span class="user-email">${user.email}</span>
+				                    </div>
+				                </div>`;
+				            usersContainer.innerHTML += userBlock;
+				        });
+				    },
+                    error: function (xhr, status, error) {
+                        console.error("EC 사용자 목록을 가져오는데 실패했습니다:", error);
+                    }
+                });
+            });
+
+            document.getElementById("logout-button").addEventListener("click", function() {
+                if (confirm("정말로 로그아웃하시겠습니까?")) {  
+                    localStorage.removeItem("jwtToken"); 
+                    alert("로그아웃되었습니다."); 
+                    window.location.href = "Loggingin.html";
+                }
+            });
+        });
+    </script>
+</body>
+</html>

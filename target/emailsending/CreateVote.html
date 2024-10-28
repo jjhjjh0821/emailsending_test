@@ -1,0 +1,240 @@
+<!-- 연결주소 : http://localhost:8080/CreateVote.html -->
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>투표 등록</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #f4f4f4;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            background: linear-gradient(135deg, #ffffff 0%, #f7f7f7 100%);
+        }
+
+        #button-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .nav-button {
+            font-size: 12px;
+            padding: 7px 15px;
+            margin-left: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .nav-button.btn-secondary {
+            background-color: #6c757d;
+            color: #fff;
+        }
+
+        .nav-button.btn-danger {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .nav-button:hover {
+            opacity: 0.8;
+        }
+
+        .card-title {
+            font-weight: bold;
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .divider {
+            border-top: 1px solid #d6d6d6;
+            margin: 20px 0;
+        }
+
+	    .form-group {
+	        margin-left: 15px;
+	        margin-right: 15px;
+	    }
+        .form-group label {
+            font-weight: bold;
+        }
+
+        .date-error {
+            color: red;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .form-group:last-of-type {
+            margin-bottom: 20px;
+        }
+
+        .btn-primary {
+            font-size: 1.1rem;
+            padding: 10px 20px;
+            display: block;
+            width: 100%;
+            border-radius: 25px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="button-container">
+        <button id="info-button" class="btn nav-button btn-secondary">마이페이지</button>
+        <button id="logout-button" class="btn nav-button btn-danger">로그아웃</button>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <div class="card-body">
+                <div class="card-title">투표 등록</div>
+                <hr class="divider">
+                <form id="vote-creation-form">
+                    <div class="form-group">
+                        <label for="vote-title">투표 제목</label>
+                        <input type="text" class="form-control" id="vote-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="vote-start">투표 시작일</label>
+                        <input type="datetime-local" class="form-control" id="vote-start" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="vote-end">투표 종료일</label>
+                        <input type="datetime-local" class="form-control" id="vote-end" required>
+                    </div>
+                    <div id="date-error" class="date-error"></div>
+                    <button type="submit" class="btn btn-primary" id="submit-button" disabled>투표 등록</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+    <script>
+        function validateForm() {
+            const title = document.getElementById("vote-title").value.trim();
+            const startDate = new Date(document.getElementById("vote-start").value);
+            const endDate = new Date(document.getElementById("vote-end").value);
+            const dateError = document.getElementById("date-error");
+            const submitButton = document.getElementById("submit-button");
+
+            let isValid = true;
+
+            const now = new Date();
+
+            if (startDate < now) {
+                dateError.textContent = "시작 시간은 현재 시간보다 이후여야 합니다.";
+                isValid = false;
+            } else if (endDate <= startDate) {
+                dateError.textContent = "종료 날짜가 시작 날짜보다 이전일 수 없습니다.";
+                isValid = false;
+            } else {
+                dateError.textContent = "";
+            }
+
+            submitButton.disabled = !isValid || !title;
+        }
+
+        document.getElementById("vote-title").addEventListener("input", validateForm);
+        document.getElementById("vote-start").addEventListener("change", validateForm);
+        document.getElementById("vote-end").addEventListener("change", validateForm);
+
+        document.getElementById("info-button").addEventListener("click", function() {
+            window.location.href = "UserInfo.html"; 
+        });
+
+        document.getElementById("logout-button").addEventListener("click", function() {
+            if (confirm("정말로 로그아웃하시겠습니까?")) {
+                localStorage.removeItem("jwtToken");
+                alert("로그아웃되었습니다.");
+                window.location.href = "Loggingin.html";
+            }
+        });
+        
+        document.getElementById("vote-creation-form").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const title = document.getElementById("vote-title").value;
+            const start = document.getElementById("vote-start").value;
+            const end = document.getElementById("vote-end").value;
+            
+            const requestData = {
+                title: title,
+                start: start,
+                end: end
+            };
+
+            $.ajax({
+                url: "/createvote",
+                type: "POST",
+                contentType: "application/json; charset=UTF-8",
+                headers: {
+                    "Authorization": "Bearer " + localStorage.getItem("jwtToken")
+                },
+                data: JSON.stringify(requestData),
+                success: function(response) {
+                    try {
+                        const responseData = typeof response === "string" ? JSON.parse(response) : response;
+                        if (responseData.id) {
+                            localStorage.removeItem("voteId");
+                            localStorage.setItem("voteId", responseData.id);
+                            localStorage.removeItem("voteTitle");
+                            localStorage.setItem("voteTitle", requestData.title);
+                            
+                            alert("투표가 성공적으로 생성되었습니다. 후보자 등록페이지로 이동합니다.");
+                            window.location.href = "AddCandidates.html";
+                        } else {
+                            console.error("ID가 서버로부터 반환되지 않았습니다.");
+                        }
+                    } catch (e) {
+                        console.error("서버 응답 파싱 실패:", e);
+                        console.error("원본 응답:", response);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error occurred:", error);
+                    console.info("서버 응답:", xhr.responseText);
+                    alert("투표 생성에 실패했습니다.");
+                }
+            });
+        });
+
+        function checkAuthentication() {
+            const token = localStorage.getItem("jwtToken");
+
+            if (!token) {
+                alert("로그인이 필요합니다!");
+                window.location.href = "Loggingin.html";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", checkAuthentication);
+    </script>
+</body>
+</html>

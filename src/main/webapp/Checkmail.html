@@ -1,0 +1,273 @@
+<!-- 연결주소 : http://localhost:8080/Checkmail.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f4f4;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+        }
+        .card {
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            background: linear-gradient(135deg, #ffffff 0%, #f7f7f7 100%);
+        }
+        .card-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group-text {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            color: #999;
+        }
+        .input-group .form-control {
+            border: 1px solid #ddd;
+            border-left: none;
+        }
+        .form-control {
+            padding-left: 13px;
+        }
+        .input-group-prepend {
+            border-radius: 0;
+        }
+        .input-group-text i {
+            color: #007bff;
+        }
+	
+		.form-select:focus {
+		    background-color: #ffffff;
+		    border-color: #007bff;
+		    outline: none;
+		}
+        
+        #sendBtn, #confirmBtn {
+            border-radius: 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #sendBtn:hover, #confirmBtn:hover {
+            background-color: #0056b3;
+        }
+        #mail_number {
+            display: none;
+            transition: all 0.3s ease;
+        }
+        #timer {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="card" id="card">
+        <div class="card-body">
+            <h5 class="card-title">회원가입</h5>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                </div>
+                <input type="text" class="form-control" placeholder="Name" aria-label="Name" id="signupModalInputtedUserName" oninput="validateInputs()">
+            </div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                </div>
+                <input type="date" class="form-control" placeholder="Date of Birth" aria-label="Date of Birth" id="signupModalInputtedUserDOB" oninput="validateInputs()">
+            </div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                </div>
+                <input type="text" class="form-control" placeholder="Email" aria-label="Email" id="signupModalInputtedUserEmail" oninput="validateInputs()">
+                <span class="input-group-text">@</span>
+                <input type="text" class="form-control" placeholder="naver.com" id="showSelectedValue" value="naver.com" aria-label="Domain" disabled>
+                <select class="form-select" aria-label="Select Domain" onchange="selectEmailChange(this)">
+                    <option selected value="naver">네이버</option>
+                    <option value="google">구글</option>
+                    <option value="daum">다음</option>
+                    <option value="user_email_input">직접입력</option>
+                </select>
+            </div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                </div>
+                <input type="password" class="form-control" placeholder="Password" aria-label="Password" id="signupModalInputtedUserPassword" oninput="validateInputs()">
+            </div>
+            <button type="button" class="btn btn-primary btn-block mb-3" id="sendBtn" name="sendBtn" onclick="sendEmail()" disabled>인증번호 전송</button>
+            <div id="mail_number" name="mail_number">
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span> 
+                    </div>
+                    <input type="text" class="form-control" name="number" id="number" placeholder="인증번호 입력">
+                </div>
+                <button type="button" class="btn btn-primary btn-block" name="confirmBtn" id="confirmBtn" onclick="confirmNumber()">이메일 인증</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/crypto-js.js"></script>
+
+    <script type="text/javascript">
+        function validateInputs() {
+            var name = $("#signupModalInputtedUserName").val();
+            var dob = $("#signupModalInputtedUserDOB").val();
+            var email = $("#signupModalInputtedUserEmail").val();
+            var password = $("#signupModalInputtedUserPassword").val();
+
+            // 모든 필수 입력란이 채워졌는지 확인
+            if (name && dob && email && password) {
+                $("#sendBtn").prop("disabled", false); // "인증번호 전송" 버튼 활성화
+            } else {
+                $("#sendBtn").prop("disabled", true); // "인증번호 전송" 버튼 비활성화
+            }
+        }
+
+        function selectEmailChange(select) {
+            var selectedOption = select.value;
+            var domainInput = document.getElementById("showSelectedValue");
+            if (selectedOption === "user_email_input") {
+                domainInput.disabled = false;
+                domainInput.value = "";
+            } else {
+                domainInput.disabled = true;
+                switch (selectedOption) {
+                    case "naver":
+                        domainInput.value = "naver.com";
+                        break;
+                    case "google":
+                        domainInput.value = "gmail.com";
+                        break;
+                    case "daum":
+                        domainInput.value = "daum.net";
+                        break;
+                    default:
+                        domainInput.value = "";
+                }
+            }
+        }
+        
+        var otp; // 전역변수 선언
+        var timerInterval; // 타이머 인터벌 저장
+        
+        function sendEmail() {
+            var email = $("#signupModalInputtedUserEmail").val();
+            var domain = $("#showSelectedValue").val();
+            var fullEmail = email + "@" + domain;
+            
+            $("#sendBtn").prop("disabled", true); // 인증번호 버튼 비활성화
+            
+            $.ajax({
+                type: "POST",
+                url: "/emailsending/emailsend",
+                contentType: "application/json",
+                data: JSON.stringify(fullEmail),
+                success: function(response) {
+                    $("#mail_number").slideDown();
+                    otp = response; // otp값 받아와 저장
+                    alert("이메일 전송 완료");
+                    $("#confirmBtn").prop("disabled", false); // "이메일 인증" 버튼 다시 활성화
+                    startTimer(180); // 3분 타이머 시작
+                },
+                error: function(xhr, status, error) {
+                    console.error(xhr.responseText);
+                }
+            });
+        }
+        
+        function startTimer(duration) {
+            var timer = duration;
+            clearInterval(timerInterval); // 기존 타이머 클리어
+
+            timerInterval = setInterval(function() {
+                var minutes = parseInt(timer / 60, 10);
+                var seconds = parseInt(timer % 60, 10);
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+                
+                $("#number").attr("placeholder", "인증번호 입력 (" + minutes + ":" + seconds + ")");
+                $("#timer").text(minutes + ":" + seconds);
+
+                if (--timer < 0) {
+                    clearInterval(timerInterval);
+                    alert("OTP 유효기간이 만료되었습니다.");
+                    $("#confirmBtn").prop("disabled", true); // "이메일 인증" 버튼 비활성화
+                    $("#sendBtn").prop("disabled", false); // "인증번호 전송" 버튼 다시 활성화
+                }
+            }, 1000);
+        }
+        
+        function confirmNumber() {
+            var name = $("#signupModalInputtedUserName").val();
+            var dob = $("#signupModalInputtedUserDOB").val();
+            var email = $("#signupModalInputtedUserEmail").val();
+            var domain = $("#showSelectedValue").val();
+            var fullEmail = email + "@" + domain;
+            var password = $("#signupModalInputtedUserPassword").val();
+            var storedOTP = otp;
+            var enteredOTP = $("#number").val();
+            
+            if (storedOTP === enteredOTP) {
+                alert("인증되었습니다.");
+                
+                // 클라이언트에서 비밀번호 평문으로 전송 -> 서버에서 해시화
+                $.ajax({
+                    type: "POST",
+                    url: "/emailsending/dbsave",
+                    data: {
+                        name: name,
+                        dob: dob,
+                        email: fullEmail,
+                        password: password
+                    },
+                    success: function(response) {
+                        alert("데이터가 성공적으로 저장되었습니다!");
+                        window.location.href = "Loggingin.html"; // 로그인 화면으로 이동
+                    },
+                    error: function(xhr, status, error) {
+                        alert("데이터 저장 실패");
+                        console.error(xhr.responseText);
+                    }
+                });
+                
+            } else {
+                alert("인증번호가 올바르지 않습니다. 다시 시도해주세요.");
+            }
+        }
+    </script>
+</body>
+</html>
+
