@@ -149,7 +149,7 @@
 <body>
     <div class="card">
         <h5 class="card-title">로그인</h5>
-        <form action="/login" method="POST" onsubmit="login(event)">
+        <form action="/emailsending/login" method="POST" onsubmit="login(event)">
             <div class="form-group">
                 <i class="fas fa-envelope"></i>
                 <input type="text" class="form-control" id="id" name="id" placeholder="Email" />
@@ -215,9 +215,17 @@
             var email = document.getElementById("id").value;
             var password = document.getElementById("pw").value;
             
+            // AJAX 요청에 대한 로그 추가
             hashPassword(password).then(hashedPassword => {
+        	// 해시된 비밀번호가 생성된 후에 로그 출력
+       		console.log("AJAX request:", JSON.stringify({
+            	email: email,
+            	hashedPassword: hashedPassword
+        	}));
+        	
+       		console.log("Hashed Password:", hashedPassword);  // 해시된 비밀번호 로그
                 $.ajax({
-                    url: "/login",
+                    url: "/emailsending/login",
                     type: "POST",
                     contentType: "application/x-www-form-urlencoded",
                     data: {
@@ -234,10 +242,13 @@
                     },
                     error: function(xhr, status, error) {
                         console.error("Error:", error);
-                        showAlertPopup("로그인 실패. 나중에 다시 시도해 주세요.");
+                        showAlertPopup("로그인 실패. 나중에 다시 시도해 주세요." + xhr.responseText);
                     }
                 });
-            });
+                }).catch(err => {
+                    console.error("Hashing error:", err);
+                    showAlertPopup("비밀번호 해시 생성 중 오류가 발생했습니다.");
+                });
         }
             
         function showAlertPopup(message) {

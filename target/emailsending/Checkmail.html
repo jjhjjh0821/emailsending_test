@@ -5,6 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval';">
     <title>회원가입</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
@@ -191,7 +192,7 @@
             
             $.ajax({
                 type: "POST",
-                url: "/emailsend",
+                url: "/emailsending/emailsend",
                 contentType: "application/json",
                 data: JSON.stringify(fullEmail),
                 success: function(response) {
@@ -246,7 +247,7 @@
                 // 클라이언트에서 비밀번호 평문으로 전송 -> 서버에서 해시화
                 $.ajax({
                     type: "POST",
-                    url: "/dbsave",
+                    url: "/emailsending/dbsave",
                     data: {
                         name: name,
                         dob: dob,

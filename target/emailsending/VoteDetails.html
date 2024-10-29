@@ -62,7 +62,7 @@
 
         .nav-button {
             font-size: 12px;
-            padding: 7px 15px; 
+            padding: 7px 15px;
             margin-left: 5px;
             border: none;
             border-radius: 5px;
@@ -97,12 +97,12 @@
 		}
 		
 		.candidates-list::-webkit-scrollbar-track {
-		    background: #f1f1f1; 
-		    border-radius: 10px; 
+		    background: #f1f1f1;
+		    border-radius: 10px;
 		}
 		
 		.candidates-list::-webkit-scrollbar-thumb {
-		    background: #d3d3d3; 
+		    background: #d3d3d3;
 		    border-radius: 10px; 
 		}
 		
@@ -187,6 +187,31 @@
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(param);
         }
+        
+     	// 유권자 여부 확인 함수
+        function checkVoterEligibility() {
+        	const voteId = getQueryParam('id');
+            const token = localStorage.getItem("jwtToken");
+            return fetch(`/emailsending/checkVoter?voteId=${voteId}`, {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to check voter eligibility");
+                }
+                return response.json();
+            }).then(voterData => {
+                if (!voterData.isVoter) {
+                    document.getElementById("candidates").style.display = "none";
+                    const messageContainer = document.getElementById("message-container");
+                    messageContainer.style.display = "block";
+                    messageContainer.textContent = "유권자가 아닙니다. 후보자를 볼 수 없습니다.";
+                    return;
+                }
+            });
+        }
 
         // 투표 세부 사항을 로드
         function loadVoteDetails() {
@@ -205,7 +230,7 @@
             }
 
             // 서버에서 투표 세부 정보를 로드
-            fetch(`/getvotes?id=${voteId}`, {
+            fetch(`/emailsending/getvotes?id=${voteId}`, {
                 method: "GET",
                 headers: {
                     "Authorization": "Bearer " + token
@@ -230,6 +255,8 @@
                 document.getElementById("vote-dates").innerHTML = `시작: ${new Date(vote.start).toLocaleString()}<br>종료: ${new Date(vote.end).toLocaleString()}`;
                 document.getElementById("vote-creator").textContent = `투표 작성자: ${vote.creatorName}`;
 
+                checkVoterEligibility();
+                
              	// 시작 시간 이전 or 종료 시간이 이후에 투표 버튼 비활성화
                 const now = new Date();
                 const startDate = new Date(vote.start);
@@ -240,7 +267,7 @@
                         item.classList.add("disabled");
                     });
                     
-                 	// candidates 컨테이너 숨기기
+                 	// candidates 컨테이너 숨김
                     const candidatesContainer = document.getElementById("candidates");
                     candidatesContainer.style.display = "none";
 
@@ -266,11 +293,11 @@
         }
 
 
-        // 후보자 정보를 로드
+        // 후보자 정보를 서버에서 로드
         function loadCandidates(voteId) {
 		    const token = localStorage.getItem("jwtToken");
 		    
-		    fetch(`/getcandidates?voteId=${voteId}`, {
+		    fetch(`/emailsending/getcandidates?voteId=${voteId}`, {
 		        method: "GET",
 		        headers: {
 		            "Authorization": "Bearer " + token
@@ -323,8 +350,8 @@
 		        window.location.href = "Loggingin.html";
 		        return;
 		    }
-		
-		    fetch(`/voteForCandidate?voteId=${voteId}&symbol=${symbol}`, {
+			    
+		    fetch(`/emailsending/voteForCandidate?voteId=${voteId}&symbol=${symbol}`, {
 		        method: "POST",
 		        headers: {
 		            "Authorization": "Bearer " + token,
@@ -335,24 +362,56 @@
 		        if (response.status === 401) {
 		            throw new Error("Unauthorized");
 		        } else if (response.status === 403) {
-		        	alert("이미 투표 하셨습니다.");
-		            window.location.href = `VoteResults.html?id=${voteId}`;
-		            throw new Error("이미 투표 하셨습니다.");
+		        	//alert("이미 투표 하셨습니다. 메인페이지로 이동합니다.");
+		            window.location.href = `Mainpage.html`;
+		            throw new Error("이미 투표 하셨습니다.메인페이지로 이동합니다.");
 		        } else if (!response.ok) {
 		            throw new Error("Failed to cast vote");
 		        }
 		        return response.json();
 		    })
 		    .then(data => {
-		    	alert('투표가 완료되었습니다.');
-		        window.location.href = `VoteResults.html?id=${voteId}`;  // 결과 화면으로 리디렉션
-		    })
-		    .catch(error => {
-		        console.error("Error:", error);
-		        if (error.message !== "이미 투표 하셨습니다.") {
-		            alert(error.message);
+		    	
+		    	const now = new Date();
+
+				// 한국 시간으로 변환 (UTC + 9시간)
+				now.setHours(now.getHours() + 9);
+		
+				// ISO 형식으로 출력
+				const voteTime = now.toISOString().replace('T', ' ').slice(0, 23);
+				 
+			    alert('투표가 완료되었습니다.');
+			
+			    // 블록체인에 전달
+			    return fetch(`/emailsending/BlockchainServlet?symbol=${symbol}&voteId=${voteId}&voteTime=${voteTime}`, {
+			        method: "POST",
+			        headers: {
+			            "Authorization": "Bearer " + token,
+			            "Content-Type": "application/json; charset=UTF-8"
+			        }
+			    });
+			})
+			.then(blockchainResponse => {
+			    if (!blockchainResponse.ok) {
+			        window.location.href = "Mainpage.html";
+			        throw new Error("Failed to update blockchain");
+			    }
+			    return blockchainResponse.json();
+			})
+			.then(blockchainData => {
+				 // 블록체인 응답 처리 후 유효성 체크
+		        if (blockchainData.error) {
+		            alert(blockchainData.error);
+		            window.location.href = "Mainpage.html"; // 유효하지 않으면 메인 페이지로
+		        } else {
+		            // 유효한 경우 결과 화면으로
+		            window.location.href = `VoteResults.html?id=${voteId}`;
 		        }
-		    });
+			})
+			.catch(error => {
+			    console.error("Error:", error);
+			    alert(error.message);
+			});
 		}
 
         document.getElementById("back-button").addEventListener("click", function() {

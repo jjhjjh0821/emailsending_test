@@ -189,7 +189,7 @@
             const token = localStorage.getItem("jwtToken");
 
             if (token) {
-                fetch("/userinfo", {
+                fetch("/emailsending/userinfo", {
                     method: "GET",
                     headers: {
                         "Authorization": "Bearer " + token
@@ -229,7 +229,7 @@
 		    // 이전 컨텐츠를 잠시 숨기기
 		    votesContainer.style.visibility = 'hidden';
 		
-		    fetch("/getvotes", {
+		    fetch("/emailsending/getvotes", {
 		        method: "GET",
 		        headers: {
 		            "Authorization": "Bearer " + token
@@ -289,7 +289,7 @@
 		            // 임시로 숨기기
 		            votesContainer.innerHTML = "";
 		
-		            fetch("/userinfo", {
+		            fetch("/emailsending/userinfo", {
 		                method: "GET",
 		                headers: {
 		                    "Authorization": "Bearer " + token
@@ -323,7 +323,7 @@
 		                    }else{
 		                    	
 		                    	voteItem.addEventListener("click", function () {
-			                        fetch(`/checkvote?voteId=${vote.id}`, {
+			                        fetch(`/emailsending/checkvote?voteId=${vote.id}`, {
 			                            method: "GET",
 			                            headers: {
 			                                "Authorization": "Bearer " + token
@@ -395,7 +395,7 @@
         function deleteVote(voteId) {
             const token = localStorage.getItem("jwtToken");
 
-            fetch(`/deletevote?id=${voteId}`, {
+            fetch(`/emailsending/deletevote?id=${voteId}`, {
                 method: "DELETE",
                 headers: {
                     "Authorization": "Bearer " + token

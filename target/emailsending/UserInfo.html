@@ -299,7 +299,7 @@
 
             const loadUserInfo = () => {
                 $.ajax({
-                    url: "/userinfo",
+                    url: "/emailsending/userinfo",
                     type: "GET",
                     headers: {
                         "Authorization": "Bearer " + token
@@ -314,7 +314,7 @@
                         if (response.user_type === "user") {
                             // 역할 신청 상태 확인
                             $.ajax({
-                                url: "/requestRole",
+                                url: "/emailsending/requestRole",
                                 type: "GET",
                                 headers: {
                                     "Authorization": "Bearer " + token
@@ -353,7 +353,7 @@
                     const newEmail = prompt("새 이메일을 입력하세요:", document.getElementById("email").textContent);
                     if (newEmail) {
                         $.ajax({
-                            url: "/updateUserInfo",
+                            url: "/emailsending/updateUserInfo",
                             type: "POST",
                             headers: {
                                 "Authorization": "Bearer " + token,
@@ -376,7 +376,7 @@
                     const newPassword = prompt("새 비밀번호를 입력하세요:");
                     if (newPassword) {
                         $.ajax({
-                            url: "/updateUserInfo",
+                            url: "/emailsending/updateUserInfo",
                             type: "POST",
                             headers: {
                                 "Authorization": "Bearer " + token,
@@ -398,7 +398,7 @@
                     if (confirm("정말로 탈퇴하시겠습니까?")) {
                         const email = document.getElementById("email").textContent;
                         $.ajax({
-                            url: "/deleteUser",
+                            url: "/emailsending/deleteUser",
                             type: "DELETE",
                             headers: {
                                 "Authorization": "Bearer " + token,
@@ -424,7 +424,7 @@
                         const email = document.getElementById("email").textContent;
 
                         $.ajax({
-                            url: "/requestRole",
+                            url: "/emailsending/requestRole",
                             type: "POST",
                             headers: {
                                 "Authorization": "Bearer " + token,
@@ -516,7 +516,7 @@
 
                 // EC 사용자 목록을 가져오는 AJAX 요청
                 $.ajax({
-				    url: "/getECusers",
+				    url: "/emailsending/getECusers",
 				    type: "GET",
 				    headers: {
 				        "Authorization": "Bearer " + token,

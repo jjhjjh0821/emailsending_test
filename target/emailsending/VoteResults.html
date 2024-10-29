@@ -161,7 +161,7 @@
                 return;
             }
 
-            fetch(`/getresults?voteId=${voteId}`, {
+            fetch(`/emailsending/getresults?voteId=${voteId}`, {
                 method: "GET",
                 headers: {
                     "Authorization": "Bearer " + token
