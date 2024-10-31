@@ -378,7 +378,7 @@
 			                                    alert("유권자가 아닙니다. 투표에 참여할 수 없습니다.");
 			                                } else {
 			                                    // 유권자인 경우 투표 진행
-			                                    fetch(`/checkvote?voteId=${vote.id}`, {
+			                                    fetch(`/emailsending/checkvote?voteId=${vote.id}`, {
 			                                        method: "GET",
 			                                        headers: {
 			                                            "Authorization": "Bearer " + token
