@@ -6,10 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>메인 페이지</title>
-    <link
-        href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-        rel="stylesheet"
-    />
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
     <style>
         body {
@@ -182,6 +179,29 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 
     <script>
+    
+ // 페이지 로드 시 메인 페이지 불러오기
+    window.addEventListener("load", function () {
+        loadMainPage(); 
+        checkAndRefreshVotes();
+    });
+    
+ 	// 투표 목록 매 분 00초마다 새로고침
+    function checkAndRefreshVotes() {
+        // 현재 시간
+        const now = new Date();
+        const seconds = now.getSeconds();
+
+        // 다음 새로고침까지 남은 초 계산
+        const secondsUntilNextMinute = 60 - seconds;
+
+        // 다음 정각에 새로고침 설정
+        setTimeout(() => {
+            loadVotes();
+
+            setInterval(loadVotes, 60000);
+        }, secondsUntilNextMinute * 1000); // 남은 초를 밀리초로 변환
+    }
         let currentPage = 1;
         const itemsPerPage = 4; // 한 페이지당 표시할 목록 수
 
@@ -307,12 +327,30 @@
 		                    // 기한 확인
 		                    const startDate = new Date(vote.start);
 		                    const endDate = new Date(vote.end);
-		                    if (currentDate < startDate) {
+		                    
+		                 // 투표기한에 따른 색 설정
+		                    if(currentDate < startDate){
+		                    	
+		                    	voteItem.classList.add("before");
+		                    	
+		                    }else if(currentDate > endDate){
+		                    	
+		                    	voteItem.classList.add("expired");
+		                    }
+		                    
+		                 	// 선관위는 투표 클릭 시 바로 결과 페이지로 이동
+		                    if (userType === "admin" || userType === "ec") {
+		                        voteItem.addEventListener("click", function () {
+		                            window.location.href = `VoteResults.html?id=${vote.id}`;
+		                        });
+		                    } else { // 일반 유저는 투표창 이동
+		                    //투표시작전이면
+		                    	if (currentDate < startDate) {
 		                        voteItem.classList.add("before");
 		                        voteItem.addEventListener("click", function () {
 		                        	alert("투표 시작 전입니다.");
 		                        });
-		                    } else if(currentDate > endDate){
+		                    } else if(currentDate > endDate){ //투표 종료시
 		                    	voteItem.classList.add("expired");
 		                    	voteItem.addEventListener("click", function () {
 		                    		alert("투표가 종료되었습니다. 결과 페이지로 이동합니다.");
@@ -321,7 +359,7 @@
 		                    	
 		                    	
 		                    }else{
-		                    	
+		                    	//유권자 여부 확인
 		                    	voteItem.addEventListener("click", function () {
 			                        fetch(`/emailsending/checkvote?voteId=${vote.id}`, {
 			                            method: "GET",
@@ -335,6 +373,24 @@
 			                            }
 			                            return response.json();
 			                        })
+			                        .then(voterData => {
+			                                if (!voterData.isVoter) {
+			                                    alert("유권자가 아닙니다. 투표에 참여할 수 없습니다.");
+			                                } else {
+			                                    // 유권자인 경우 투표 진행
+			                                    fetch(`/emailsending/checkvote?voteId=${vote.id}`, {
+			                                        method: "GET",
+			                                        headers: {
+			                                            "Authorization": "Bearer " + token
+			                                        }
+			                                    })
+			                                    .then(response => {
+			                                    	
+			                                        if (!response.ok) {
+			                                            throw new Error("Network response was not ok");
+			                                        }
+			                                        return response.json();
+			                                    })
 			                        .then(data => {
 			                            if (data.hasVoted) {
 			                                alert("이미 투표 하셨습니다.");
@@ -344,11 +400,18 @@
 			                            }
 			                        })
 			                        .catch(error => {
-			                            console.error("CheckVote Error:", error);
-			                            alert("서버에서 응답을 받을 수 없습니다.");
-			                        });
-			                    });
-		                    }	                    
+                                        console.error("CheckVote Error:", error);
+                                        alert("서버에서 응답을 받을 수 없습니다.");
+                                    });
+                                }
+                            })
+                            .catch(error => {
+                                console.error("CheckVoter Error:", error);
+                                alert("서버에서 응답을 받을 수 없습니다.");
+                            });
+                        });
+                    }	
+                }     
 		
 		                    const voteTitle = document.createElement("div");
 		                    voteTitle.className = "vote-title";
@@ -453,16 +516,6 @@
         // 투표 등록 페이지로 이동
         document.getElementById("register-button").addEventListener("click", function () {
             window.location.href = "CreateVote.html";
-        });
-
-        // 페이지 로드 시 메인 페이지 불러오기
-        window.addEventListener("load", function () {
-            loadMainPage();
-            
-       // 투표 목록을 15초마다 새로고침
-       setInterval(() => {
-                loadVotes();
-            }, 15000);
         });
     </script>
 </body>

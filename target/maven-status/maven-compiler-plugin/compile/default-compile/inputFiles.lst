@@ -6,7 +6,9 @@ C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\user\UserInfoServl
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\blockchain\Transaction.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\user\UpdateUserInfoServlet.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\vote\CreateVoteServlet.java
+C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\user\UpdateRoleServlet.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\mail\OTPGenerator.java
+C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\vote\CheckVoterServlet.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\vote\VoteForCandidateServlet.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\login\DatabaseConnectionTest.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\user\RequestRoleServlet.java
@@ -17,6 +19,7 @@ C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\user\GetECUsersSer
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\blockchain\VoteData.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\blockchain\Transactioninput.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\mail\SendEmailServlet.java
+C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\user\GetRoleRequestsServlet.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\vote\Candidatesdb.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\vote\DeleteVoteServlet.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\user\JWTUtils.java
@@ -30,7 +33,10 @@ C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\login\JwtFilter.ja
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\login\UserDataServlet.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\mail\Emailsender2.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\login\LoginServlet.java
+C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\user\EctoUserServlet.java
+C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\user\RejectRoleServlet.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\vote\GetVoteResultsServlet.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\blockchain\TransactionOutput.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\blockchain\StringUtil.java
 C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\vote\GetCandidatesServlet.java
+C:\Users\JunHyuk\eclipse-workspace\emailsending\src\main\java\vote\GetVoteTimeServlet.java

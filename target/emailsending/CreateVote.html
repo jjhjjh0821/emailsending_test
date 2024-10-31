@@ -6,7 +6,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>투표 등록</title>
-    <!-- Bootstrap CSS -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
     <style>
@@ -99,6 +98,38 @@
             border-radius: 25px;
             margin-top: 20px;
         }
+        
+        .message-container {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .back-button {
+		    background-color: #007bff; 
+		    color: white;
+		    border: none;
+		    border-radius: 50%;
+		    width: 40px;
+		    height: 40px;
+		    display: flex;
+		    align-items: center;
+		    justify-content: center;
+		    position: absolute;
+		    top: 20px;
+		    left: 20px;
+		    cursor: pointer;
+		    transition: background-color 0.3s;
+		}
+		
+		.back-button:hover {
+		    background-color: #0056b3;
+		}
     </style>
 </head>
 <body>
@@ -110,8 +141,13 @@
     <div class="container">
         <div class="card">
             <div class="card-body">
+            	<button id="back-button" class="back-button">
+				    	<i class="fas fa-arrow-left"></i>
+					</button>
                 <div class="card-title">투표 등록</div>
                 <hr class="divider">
+                <div id="message-container" class="message-container" style="display: none;"></div>
+                
                 <form id="vote-creation-form">
                     <div class="form-group">
                         <label for="vote-title">투표 제목</label>
@@ -125,6 +161,10 @@
                         <label for="vote-end">투표 종료일</label>
                         <input type="datetime-local" class="form-control" id="vote-end" required>
                     </div>
+                    <div class="form-group">
+					    <label for="voter-csv">유권자 목록</label>
+					    <input type="file" class="form-control-file" id="voter-csv" accept=".csv" required>
+					</div>
                     <div id="date-error" class="date-error"></div>
                     <button type="submit" class="btn btn-primary" id="submit-button" disabled>투표 등록</button>
                 </form>
@@ -137,6 +177,53 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 
     <script>
+    	
+    let userType = '';
+ // 유저 타입을 확인하는 함수
+    function checkUserType() {
+        const token = localStorage.getItem("jwtToken");
+        return fetch("/emailsending/userinfo", {
+            method: "GET",
+            headers: {
+                "Authorization": "Bearer " + token
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Failed to fetch user info");
+            }
+            return response.json();
+        })
+        .then(userInfo => {
+            userType = userInfo.user_type;
+
+            // userType이 'user'이면 투표 섹션을 숨김
+            if (userType !== 'ec'&& userType !== 'admin') {
+                document.getElementById("vote-creation-form").style.display = "none";
+
+                const messageContainer = document.getElementById("message-container");
+                messageContainer.style.display = "block";
+                messageContainer.textContent = "권한이 없습니다.";
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching user info:", error);
+        });
+    }
+    
+	// 토큰확인
+    function checkAuthentication() {
+        const token = localStorage.getItem("jwtToken");
+
+        if (!token) {
+            alert("로그인이 필요합니다!");
+            window.location.href = "Loggingin.html";
+        } else{
+        	
+        	checkUserType();
+        }
+    }
+		//유효성 폼 검사
         function validateForm() {
             const title = document.getElementById("vote-title").value.trim();
             const startDate = new Date(document.getElementById("vote-start").value);
@@ -161,14 +248,17 @@
             submitButton.disabled = !isValid || !title;
         }
 
+		//입력 or 변경 시 유효성 검사
         document.getElementById("vote-title").addEventListener("input", validateForm);
         document.getElementById("vote-start").addEventListener("change", validateForm);
         document.getElementById("vote-end").addEventListener("change", validateForm);
 
+        //마이페이지 이동
         document.getElementById("info-button").addEventListener("click", function() {
             window.location.href = "UserInfo.html"; 
         });
-
+        
+        //로그아웃
         document.getElementById("logout-button").addEventListener("click", function() {
             if (confirm("정말로 로그아웃하시겠습니까?")) {
                 localStorage.removeItem("jwtToken");
@@ -177,27 +267,44 @@
             }
         });
         
+        //투표 폼 제출
         document.getElementById("vote-creation-form").addEventListener("submit", function(event) {
             event.preventDefault();
 
             const title = document.getElementById("vote-title").value;
             const start = document.getElementById("vote-start").value;
             const end = document.getElementById("vote-end").value;
+            const voterCsv = document.getElementById("voter-csv").files[0]; // CSV 파일
             
-            const requestData = {
-                title: title,
-                start: start,
-                end: end
-            };
+            
+         // 파일 유무 확인
+            if (!voterCsv) {
+                alert("유권자 CSV 파일을 업로드하세요.");
+                return;
+            }
+            
+         	// 파일 확장자 확인
+            const fileExtension = voterCsv.name.split('.').pop().toLowerCase();
+            if (fileExtension !== 'csv') {
+                alert("유권자 파일 형식은 CSV여야 합니다.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("title", title);
+            formData.append("start", start);
+            formData.append("end", end);
+            formData.append("voterCsv", voterCsv);          
 
             $.ajax({
                 url: "/emailsending/createvote",
                 type: "POST",
-                contentType: "application/json; charset=UTF-8",
+                data: formData,
+                processData: false,
+                contentType: false,
                 headers: {
                     "Authorization": "Bearer " + localStorage.getItem("jwtToken")
                 },
-                data: JSON.stringify(requestData),
                 success: function(response) {
                     try {
                         const responseData = typeof response === "string" ? JSON.parse(response) : response;
@@ -205,8 +312,8 @@
                             localStorage.removeItem("voteId");
                             localStorage.setItem("voteId", responseData.id);
                             localStorage.removeItem("voteTitle");
-                            localStorage.setItem("voteTitle", requestData.title);
-                            
+                            localStorage.setItem("voteTitle", title);
+
                             alert("투표가 성공적으로 생성되었습니다. 후보자 등록페이지로 이동합니다.");
                             window.location.href = "AddCandidates.html";
                         } else {
@@ -224,17 +331,15 @@
                 }
             });
         });
-
-        function checkAuthentication() {
-            const token = localStorage.getItem("jwtToken");
-
-            if (!token) {
-                alert("로그인이 필요합니다!");
-                window.location.href = "Loggingin.html";
-            }
-        }
+     	
+        document.getElementById("back-button").addEventListener("click", function() {
+        	window.location.href = "Mainpage.html";
+        });
 
         document.addEventListener("DOMContentLoaded", checkAuthentication);
+        
     </script>
 </body>
 </html>
+
+                

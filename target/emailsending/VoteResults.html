@@ -118,6 +118,62 @@
         .results-text .candidate-item {
             margin-bottom: 10px;
         }
+        
+        .message-container {
+		    background-color: #f8d7da;
+		    color: #721c24;
+		    border: 1px solid #f5c6cb;
+		    border-radius: 5px;
+		    padding: 15px;
+		    margin-top: 20px;
+		    text-align: center;
+		}
+		
+		.summary-text {
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        #timeCanvas {
+        	height: 300px; /* 원하는 높이 설정 */
+        	width: 100%; /* 너비는 100%로 설정 */
+    	}
+    	
+    	.results-detail {
+		    padding: 40px;
+		    position: relative;
+		    overflow-y: auto; /* 세로 방향 스크롤바 추가 */
+		    max-height: 500px; /* 최대 높이 설정 (필요에 따라 조정 가능) */
+		}
+		
+		.results-detail::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .results-detail::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .results-detail::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+
+        .results-detail::-webkit-scrollbar-thumb:hover {
+            background: #a0a0a0;
+        }
+        
+        .divider {
+		    width: 100%;
+		    height: 1px;
+		    background-color: #d3d3d3; /* 회색 줄 색상 */
+		    margin: 30px 0; /* 위아래 여백 조정 */
+		}
+		
     </style>
 </head>
 <body>
@@ -133,19 +189,383 @@
                     <i class="fas fa-poll" style="margin-right: 10px; color: #007bff;"></i>
                     투표 결과
                 </div>
+                <div id="message-container" class="message-container" style="display: none;"></div>
                 <div id="results-chart" class="results-chart">Loading results...</div>
                 <div id="winner-text" class="results-text"></div>
+                <div class="divider" style="display: none;"></div>
+                <div id="time-chart-container"></div>
+                <div id="summary" class="summary-text"></div>
                 <button id="back-button" class="btn btn-secondary">메인으로</button>
             </div>
         </div>
     </div>
 
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-gauge@1.0.0/dist/chartjs-gauge.min.js"></script>
+
     <script>
+    //쿼리파라미터 가져옴
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(param);
         }
+    
+        let voterCount = 0;
+        let totalVotes = 0;
+        let userType = ' ';
 
+     // 종료 시간 체크
+        function isVotingEnded() {
+        	const voteId = getQueryParam('id');
+            if (!voteId) {
+                alert("투표 ID가 제공되지 않았습니다.");
+                window.location.href = "Mainpage.html";
+                return;
+            }
+
+            // 토큰 확인
+            const token = localStorage.getItem("jwtToken");
+            if (!token) {
+                alert("로그인이 필요합니다!");
+                window.location.href = "Loggingin.html";
+                return;
+            }
+
+            // 유저 정보 가져오기
+            fetch("/emailsending/userinfo", {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to fetch user info");
+                }
+                return response.json();
+            })
+            .then(userInfo => {
+                userType = userInfo.user_type;
+
+                // 투표 정보 가져오기
+                fetch(`/emailsending/getvotes?id=${voteId}`, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch vote details");
+                    }
+                    return response.json();
+                })
+                .then(voteData => {
+                    const vote = Array.isArray(voteData) ? voteData.find(item => item.id === voteId) : voteData;
+                    const endTime = new Date(vote.end); // 종료 시간 가져오기
+                    const currentTime = new Date(); // 현재 시간 가져오기
+                    
+                    voterCount = vote.voterCount; // 총 유권자 수
+                    
+                    // 투표 제목을 "투표결과" 앞에 표시
+                    const titleElement = document.querySelector('.results-title');
+                    titleElement.innerHTML = `
+                        <i class="fas fa-poll" style="margin-right: 10px; color: #007bff;"></i>
+                        ${vote.title} <span style="font-size: 1.3rem; color: #777; position: relative; top: 2px; margin-left: 10px;">투표 결과</span>
+                    `;
+                
+                    // 투표가 종료되지 않았고, 유저가 일반 유저일 때만 결과 비활성화
+                    if (currentTime < endTime && userType !== 'ec' && userType !== 'admin') {
+                        const resultsChart = document.getElementById("results-chart");
+                        const winnerText = document.getElementById("winner-text");
+
+                        resultsChart.style.display = 'none'; // 차트 숨기기
+                        winnerText.style.display = 'none'; // 당선자 숨기기
+
+                        // 메시지 표시
+                        const messageContainer = document.getElementById("message-container");
+                        messageContainer.textContent = "투표가 종료되지 않았습니다. 결과를 기다려주세요.";
+                        messageContainer.style.display = 'block';
+
+                        return; // 결과 숨기고 종료
+                    }
+
+                    // 블록체인 유효성 검사
+                    fetch(`/emailsending/BlockchainServlet?voteId=${voteId}`, {
+                        method: "GET",
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error("Failed to fetch blockchain validation");
+                        }
+                        return response.json();
+                    })
+                    .then(validationData => {
+                    	//console.log(validationData); 
+                    	
+                        if (!validationData.isValid) {
+                            // 블록체인이 유효하지 않은 경우
+                            //alert("경고: 블록체인이 유효하지 않습니다. 결과를 확인할 수 없습니다.");
+                            
+                            if (userType === 'ec' || userType === 'admin') {
+		                        // 관리자나 EC인 경우: 경고 메시지 표시 후 결과 표시  
+		                        const messageContainer = document.getElementById("message-container");
+		                        const errorMessage = validationData.error
+		                        messageContainer.innerHTML = `<span style="color: red;">${errorMessage}</span>`;
+		                        messageContainer.style.display = 'block';
+		                        
+		                        loadVoteResults(); // 투표 결과 로드
+		                        
+                            } else {
+                                // 일반 유저일 경우경우: 경고 메시지 표시 & 결과 숨기기
+                                const resultsChart = document.getElementById("results-chart");
+                                const winnerText = document.getElementById("winner-text");
+                                resultsChart.style.display = 'none'; // 차트 숨기기
+                                winnerText.style.display = 'none'; // 당선자 숨기기
+
+                                const messageContainer = document.getElementById("message-container");
+                                messageContainer.textContent = "블록체인이 유효하지 않아 결과를 확인할 수 없습니다.";
+                                messageContainer.style.display = 'block';
+                            }
+                            
+                            return; // 종료
+                        }
+
+                        //alert("블록체인이 유효합니다."); 
+                        loadVoteResults(); // 유효한 경우 투표 결과 로드
+                    });
+                });
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("사용자 정보를 가져오는 데 실패했습니다.");
+            });
+        }
+        
+        // 시간대별 누적투표율 계산
+        function loadVoteTimes() {
+            const voteId = getQueryParam('id');
+            if (!voteId) {
+                alert("투표 ID가 제공되지 않았습니다.");
+                window.location.href = "Mainpage.html";
+                return;
+            }
+
+            // 토큰 확인
+            const token = localStorage.getItem("jwtToken");
+            if (!token) {
+                alert("로그인이 필요합니다!");
+                window.location.href = "Loggingin.html";
+                return;
+            }
+
+            // GetVoteTimeServlet에서 데이터 가져오기
+            fetch(`/emailsending/getVoteTimes?voteId=${voteId}`, {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to fetch vote time data");
+                }
+                return response.json();
+            })
+            .then(voteTimeData => {
+                const voteDates = {};
+                voteTimeData.forEach(voteTime => {
+                	const cleanedVoteTime = voteTime.replace(/\[.*\]$/, ''); // 정규 표현식을 사용하여 [Asia/Seoul] 제거
+                    const localDate = new Date(cleanedVoteTime); // Date 객체 생성
+                 	// 한국 시간의 날짜 추출
+                    const date = 
+                    	`${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
+                    if (!voteDates[date]) {
+                        voteDates[date] = [];
+                    }
+                    voteDates[date].push(localDate); // 해당 날짜의 투표 시간을 추가
+                });
+
+                const voteDays = Object.keys(voteDates);
+                //console.log("Vote days:", voteDays);
+                const totalEligibleVoters = voterCount;
+                const datasets = [];
+                
+                const hourly = Array(24).fill(0); // 각 시간대별 투표율
+                //let dayCount = 0; // 전체 날짜 수
+
+                let previousCumulativePercentage = 0;
+
+                voteDays.forEach((date, index) => {
+                    const voteTimes = voteDates[date];
+                    const voteCountsByHour = Array(24).fill(0);
+
+                    // 해당 날짜의 투표 수를 시간대별로 계산
+                    voteTimes.forEach(voteTime => {
+                        const hour = voteTime.getHours(); // 시간만 추출
+                        voteCountsByHour[hour]++; // 해당 시간대에 투표 수 증가
+                        
+                        hourly[hour]++; 
+                    });
+
+                    // 해당 날짜의 누적 투표율 계산
+                    //const totalVotes = voteTimes.length;
+                    const cumulativeVoteCounts = [];
+                    let cumulativeTotal = previousCumulativePercentage * totalEligibleVoters;
+                    
+                    //alert(cumulativeTotal);
+
+                    for (let hour = 0; hour < 24; hour++) {
+                        cumulativeTotal += voteCountsByHour[hour];
+                        const cumulativePercentage = (cumulativeTotal / totalEligibleVoters) * 100;
+                        cumulativeVoteCounts.push(cumulativePercentage.toFixed(2));
+                    
+                     	// 시간대별 평균을 위한 데이터
+                        //hourly[hour] = parseFloat(cumulativePercentage);
+                    
+                    }
+                    
+                    const randomColor = getRandomColor(); // 랜덤 색상 생성
+
+                    // 데이터셋 추가
+                    datasets.push({
+                    	label: date.substring(2, 4) + '/' + date.substring(5, 7) + '/' + date.substring(8, 10), // 형식을 YY/MM/DD로 설정
+                        data: cumulativeVoteCounts,
+                        borderColor: randomColor, // 선 색상
+                        backgroundColor: randomColor, // 네모 아이콘 배경색 설정
+                        fill: false,
+                        tension: 0.1 // 커브 형태
+                    });
+
+                    // 이전 날짜의 누적 투표율 업데이트
+                    previousCumulativePercentage = cumulativeTotal / totalEligibleVoters;
+                    //dayCount++;
+                });
+                
+             	// 시간별 평균 투표율 계산
+                //const averageVoteCounts = hourAverages.map(sum => (sum / dayCount).toFixed(2));
+                
+             	// 총 투표 수 미리 계산
+		        const accumulatedTotal = voteDays.reduce((sum, date) => sum + voteDates[date].length, 0);
+				//consol.log(accumulatedTotal);
+				
+		        // 시간별 평균 투표율 계산
+		        const averageVoteCounts =  hourly.map((count, hour) => {
+		        	//console.log(`${hour}시: ${count}표`);
+		            return accumulatedTotal > 0 ? ((count / accumulatedTotal) * 100).toFixed(2) : 0;
+		        });
+				        
+                datasets.push({
+                    label: "시간별 투표율",
+                    data: averageVoteCounts,
+                    borderColor: "#c0c0c0", // 평균 투표율은 특정 색상으로 지정
+                    backgroundColor: "#c0c0c0",
+                    fill: true, // 바 형태로 채우기
+                    tension: 0, // 선 형태가 아니므로 0으로 설정
+                    type: 'bar' // 데이터셋 타입을 바 형태로 설정
+                });
+                
+                // 차트 생성
+                //const timeChartContainer = document.createElement('div');
+                //timeChartContainer.classList.add('time-chart');
+
+                const timeChartContainer = document.getElementById("time-chart-container");
+                timeChartContainer.innerHTML = ""; // 기존 차트 제거
+                
+                const timeChartElement = document.createElement('canvas');
+                timeChartElement.id = 'timeCanvas';
+                timeChartContainer.appendChild(timeChartElement);
+
+                //const resultsChart = document.getElementById("results-chart");
+                //resultsChart.innerHTML = ""; // 기존 차트 제거
+                //resultsChart.appendChild(timeChartContainer);
+
+                const ctx = timeChartElement.getContext('2d');
+                new Chart(ctx, {
+                    type: 'line', // 커브 그래프
+                    data: {
+                        labels: Array.from({ length: 24 }, (_, i) => `${i}시`), // X축 라벨
+                        datasets: datasets // 누적 투표율 데이터
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false, // 비율 유지하지 않기
+                        scales: {
+                            x: {
+                                title: {
+                                    display: false,
+                                    //text: '시간대'
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                max: 100, // Y축 최대값을 100%로 설정
+                                title: {
+                                    display: true,
+                                   text: '누적 투표율 (%)'
+                                },
+                                ticks: {
+                                	stepSize: 20, // 눈금 간격 설정
+                                	callback: function(value) {
+                                        return value + '%'; // 라벨에 % 기호 추가
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top', // 범례 위치 설정
+                                	labels: {
+                                		boxHeight: 10, // 네모 아이콘의 높이
+                                        boxWidth: 20, // 네모 아이콘의 너비
+                                        padding: 10, // 범례 항목 간격
+                                		 
+                                        font: {
+                                            size: 12 // 범례 글꼴 크기 조정
+                                        },
+                                	}
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tooltipItem) {
+                                        return `${tooltipItem.dataset.label}: ${tooltipItem.raw}%`;
+                                    }
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: '시간대별 누적 투표율',
+                                font: {
+                                    size: 15
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                const messageContainer = document.getElementById("message-container");
+                messageContainer.textContent = "투표 시간을 불러오는 데 실패했습니다.";
+                messageContainer.style.display = 'block';
+            });
+        }
+
+        // 임의의 색상 생성 함수
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+     	// 투표 결과 로드
         function loadVoteResults() {
             const voteId = getQueryParam('id');
             if (!voteId) {
@@ -154,6 +574,7 @@
                 return;
             }
 
+            // 토큰 확인
             const token = localStorage.getItem("jwtToken");
             if (!token) {
                 alert("로그인이 필요합니다!");
@@ -176,17 +597,16 @@
                 return response.json();
             })
             .then(data => {
-                const totalVotes = data.totalVotes;
+                totalVotes = data.totalVotes;
                 const candidates = data.candidates;
+                const voteTrends = data.voteTrends; // 시간대별 득표수 데이터
 
                 const resultsChart = document.getElementById("results-chart");
-                resultsChart.innerHTML = `
-                    <canvas id="resultsCanvas"></canvas>
-                `;
+                resultsChart.innerHTML = `<canvas id="resultsCanvas"></canvas>`;
 
                 const ctx = document.getElementById('resultsCanvas').getContext('2d');
 
-                // Chart.js로 차트 생성
+                // Chart.js로 bar chart 생성
                 new Chart(ctx, {
                     type: 'bar',
                     data: {
@@ -205,36 +625,48 @@
                         responsive: true,
                         plugins: {
                             legend: {
-                                position: 'top',
+                            	display: false
+                            	//position: 'top',
+                            },
+                            title: {
+                                display: true,
+                                text: '득표현황', // 차트 제목
+                                font: {
+                                    size: 15
+                            	}
                             },
                             tooltip: {
                                 callbacks: {
                                     label: function(tooltipItem) {
                                         const total = tooltipItem.dataset.data.reduce((a, b) => a + b, 0);
                                         const value = tooltipItem.raw;
-                                        const percentage = (value / total * 100).toFixed(2) + '%';
+                                        const percentage = (value / total * 100).toFixed(2) + '%'; // 비율 계산
                                         return tooltipItem.label + ': ' + value + ' (' + percentage + ')';
                                     }
                                 }
                             }
                         },
-                        scales: {
+                        scales: { // x,y축 스케일
                             x: {
                                 beginAtZero: true
                             },
                             y: {
                                 beginAtZero: true,
+                                title: { // Y축 제목 추가
+                                    display: true,
+                                    text: '득표수' // Y축 레이블
+                                },
                                 ticks: {
                                     stepSize: 1,
                                     callback: function(value) {
-                                        return Number.isInteger(value) ? value : '';
+                                        return Number.isInteger(value) ? value : ''; //정수만 표시
                                     }
                                 }
                             }
                         }
                     }
                 });
-
+                      
                 // 당선자 표시
                 const maxVotes = Math.max(...candidates.map(c => c.votes_cnt));
                 const winners = candidates.filter(c => c.votes_cnt === maxVotes);
@@ -255,21 +687,48 @@
                         </div>
                     `;
                 }
+                
+                if(userType == 'ec' || userType == 'admin'){
+                	
+                	 const divider = document.querySelector('.divider');
+                	 divider.style.display = 'block';
+                	
+                	// 총 유권자 수 & 총 투표 수 표시
+                    const summaryElement = document.getElementById("summary")
+                    const votePercentage = (totalVotes / voterCount * 100).toFixed(2);
+
+                    // progress 게이지 바와 텍스트 표시
+    				summaryElement.innerHTML = `
+    					<div style="display: flex; justify-content: center; align-items: center; width: 100%;">
+    			        <!-- 게이지 바 -->
+    			        <div style="position: relative; width: 85%; background-color: #e0e0e0; border-radius: 10px; height: 30px; text-align: center;">
+    			            <div style="position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #4B4B4B;">
+    			                총 ${voterCount}명 중 ${totalVotes}명 투표 완료 (${votePercentage}%)
+    			            </div>
+    				        <div style="width: ${votePercentage}%; background-color: #007bff; height: 100%; border-radius: 10px;"></div>
+    				    </div>
+    				`;
+
+                    loadVoteTimes();
+                }
             })
             .catch(error => {
                 console.error("Error:", error);
                 document.getElementById("results-chart").textContent = "결과를 불러오는 데 실패했습니다.";
             });
         }
-
+       
+        // 뒤로가기 버튼
         document.getElementById("back-button").addEventListener("click", function() {
             window.location.href = "Mainpage.html";
         });
 
+        // 마이페이지 버튼
         document.getElementById("info-button").addEventListener("click", function() {
             window.location.href = "UserInfo.html"; 
         });
 
+        // 로그아웃 버튼
         document.getElementById("logout-button").addEventListener("click", function() {
             if (confirm("정말로 로그아웃하시겠습니까?")) {
                 localStorage.removeItem("jwtToken");
@@ -277,8 +736,48 @@
                 window.location.href = "Loggingin.html";
             }
         });
+        
+        let previousTotalVotes = 0; // 이전 총 투표 수 저장
 
-        document.addEventListener("DOMContentLoaded", loadVoteResults); 
+        // 총투표율 변화 확인 & 새로고침 하는 함수
+        function checkForVoteChanges() {
+            const voteId = getQueryParam('id');
+            const token = localStorage.getItem("jwtToken");
+
+            fetch(`/emailsending/getresults?voteId=${voteId}`, {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to fetch results");
+                }
+                return response.json();
+            })
+            .then(data => {
+                const currentTotalVotes = data.totalVotes;
+
+                // 총 투표 수가 변경된 경우에만 페이지 새로고침 및 isVotingEnded 호출
+                if (currentTotalVotes !== previousTotalVotes) {
+                    previousTotalVotes = currentTotalVotes; // 현재 투표 수 저장
+                    isVotingEnded(); // 총 투표 수가 바뀌었을 때만 호출
+                }
+            })
+            .catch(error => {
+                console.error("Error checking for updates:", error);
+            });
+        }
+        
+        document.addEventListener("DOMContentLoaded", function() {
+        	isVotingEnded(); 
+        	
+            // 1초마다 업데이트 확인
+            setInterval(checkForVoteChanges, 1000);
+        });
+        
+        //document.addEventListener("DOMContentLoaded", isVotingEnded);
     </script>
 </body>
 </html>

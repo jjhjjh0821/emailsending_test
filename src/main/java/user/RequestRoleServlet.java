@@ -19,13 +19,15 @@ import org.json.JSONObject;
 import java.sql.Statement;
 import java.io.BufferedReader;
 
-import user.JWTUtils;
-
 @WebServlet("/requestRole")
 public class RequestRoleServlet extends HttpServlet {
+	
+	private static final long serialVersionUID = 1L;
+	
     private static final String DB_URL = "jdbc:postgresql://localhost:5432/postgres"; // DB URL
     private static final String DB_USER = "postgres"; // DB 사용자명
     private static final String DB_PASSWORD = "1234"; // DB 비밀번호
+    
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
@@ -58,10 +60,12 @@ public class RequestRoleServlet extends HttpServlet {
             return;
         }
 
+        // 이메일, 이름, 생년월일 추출
         String email = jsonRequest.optString("email", null);
         String name = jsonRequest.optString("name", null);
         String dob = jsonRequest.optString("dob", null);
-
+        
+        // 필수 데이터 누락 시 에러 반환
         if (email == null || name == null || dob == null) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().write(new JSONObject().put("message", "필수 데이터가 누락되었습니다.").toString());

@@ -5,7 +5,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval';">
     <title>회원가입</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
@@ -61,6 +60,21 @@
 		    background-color: #ffffff;
 		    border-color: #007bff;
 		    outline: none;
+		}
+		.input-group {
+		    position: relative;
+		}
+		
+		.eye-icon {
+		    position: absolute;
+            right: 20px;
+            top: 50%;
+		    transform: translateY(-50%);
+            color: lightgray;
+            font-size: 18px;
+            cursor: pointer;
+            pointer-events: auto; 
+            z-index: 10;
 		}
         
         #sendBtn, #confirmBtn {
@@ -142,6 +156,7 @@
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/crypto-js.js"></script>
 
     <script type="text/javascript">
+    	//입력 유효성 검사
         function validateInputs() {
             var name = $("#signupModalInputtedUserName").val();
             var dob = $("#signupModalInputtedUserDOB").val();
@@ -155,7 +170,7 @@
                 $("#sendBtn").prop("disabled", true); // "인증번호 전송" 버튼 비활성화
             }
         }
-
+		//이메일 도메인 선택
         function selectEmailChange(select) {
             var selectedOption = select.value;
             var domainInput = document.getElementById("showSelectedValue");
@@ -208,6 +223,7 @@
             });
         }
         
+        //타이머
         function startTimer(duration) {
             var timer = duration;
             clearInterval(timerInterval); // 기존 타이머 클리어
@@ -231,6 +247,7 @@
             }, 1000);
         }
         
+        //입력한 OTP 유효성 확인
         function confirmNumber() {
             var name = $("#signupModalInputtedUserName").val();
             var dob = $("#signupModalInputtedUserDOB").val();
@@ -268,6 +285,23 @@
                 alert("인증번호가 올바르지 않습니다. 다시 시도해주세요.");
             }
         }
+        
+     // 비밀번호 입력 보기 토글
+        document.getElementById('togglePassword').addEventListener('click', function () {
+            const passwordInput = document.getElementById('signupModalInputtedUserPassword');
+            const eyeIcon = document.getElementById('eyeIcon');
+
+            // 비밀번호 입력란의 type을 toggle
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text'; // 비밀번호 보이기
+                eyeIcon.classList.remove('fa-eye-slash'); // 눈 빗금 아이콘 제거
+                eyeIcon.classList.add('fa-eye');
+            } else {
+                passwordInput.type = 'password'; // 비밀번호 숨기기
+                eyeIcon.classList.remove('fa-eye'); // 눈 아이콘 제거
+                eyeIcon.classList.add('fa-eye-slash'); 
+            }
+        });
     </script>
 </body>
 </html>

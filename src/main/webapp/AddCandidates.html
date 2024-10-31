@@ -6,7 +6,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>후보자 등록</title>
-    <!-- Bootstrap CSS -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
     <style>
@@ -146,6 +145,17 @@
         #candidates-container::-webkit-scrollbar-thumb:hover {
             background: #a0a0a0;
         }
+        
+        .message-container {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -161,6 +171,8 @@
                 <div id="vote-id" style="display:none;"></div>
                 <div class="text-center mb-2 bold-text">후보자 등록</div>
                 <hr class="divider">
+                <div id="message-container" class="message-container" style="display: none;"></div>
+                
                 <form id="candidates-form">
                     <div id="candidates-container">
                         <div class="form-group candidate-input">
@@ -187,9 +199,10 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            checkAuthentication();
-            loadVoteDetails();
-            updateRemoveButtons();
+            checkAuthentication(); // 토큰 확인
+            loadVoteDetails(); // 권한 확인
+            updateRemoveButtons(); //투표정보 로드
+            updateRemoveButtons(); // 후보 삭제 버튼 업데이트
         });
 
         function checkAuthentication() {
@@ -200,7 +213,43 @@
                 window.location.href = "Loggingin.html";
             }
         }
+        
+        let userType = '';
+        
+     // 유저 타입을 확인하는 함수
+	    function checkUserType() {
+	        const token = localStorage.getItem("jwtToken");
+	        return fetch("/emailsending/userinfo", {
+	            method: "GET",
+	            headers: {
+	                "Authorization": "Bearer " + token
+	            }
+	        })
+	        .then(response => {
+	            if (!response.ok) {
+	                throw new Error("Failed to fetch user info");
+	            }
+	            return response.json();
+	        })
+	        .then(userInfo => {
+	            userType = userInfo.user_type;
+	
+	            // userType이 'user'이면 투표 섹션을 숨김
+	            if (userType !== 'ec'&& userType !== 'admin') {
+	                document.getElementById("candidates-form").style.display = "none";
 
+                    const messageContainer = document.getElementById("message-container");
+                    messageContainer.style.display = "block";
+                    messageContainer.textContent = "권한이 없습니다.";
+	            }
+	        })
+	        .catch(error => {
+	            console.error("Error fetching user info:", error);
+	        });
+	    }
+     
+     
+     	// 투표 정보 로드
         function loadVoteDetails() {
             const titleElement = document.getElementById("vote-title");
             const idElement = document.getElementById("vote-id");
@@ -219,7 +268,8 @@
                 idElement.textContent = "투표 ID가 없습니다.";
             }
         }
-
+     	
+		//후보자 입력
         function addCandidateInput() {
             const candidatesContainer = document.getElementById("candidates-container");
             const numInputs = candidatesContainer.getElementsByClassName("candidate-input").length;
@@ -256,7 +306,8 @@
             updateRemoveButtons();
             updateSubmitButton();
         }
-
+		
+		//삭제 버튼 업데이트
         function updateRemoveButtons() {
             const candidateDivs = document.querySelectorAll("#candidates-container .candidate-input");
             candidateDivs.forEach((div, index) => {
@@ -265,6 +316,8 @@
             });
         }
 
+		
+		//후보자 폼 유효성 검사
         function validateForm() {
             const candidateInputs = document.querySelectorAll("#candidates-container input");
             const allFilled = Array.from(candidateInputs).every(input => input.value.trim() !== "");
@@ -272,6 +325,7 @@
             return allFilled;
         }
 
+		//후보자 폼 제풀
         function updateSubmitButton() {
             const submitButton = document.getElementById("submit-button");
             submitButton.disabled = !validateForm();

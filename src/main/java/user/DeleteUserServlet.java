@@ -55,20 +55,20 @@ public class DeleteUserServlet extends HttpServlet {
             e.printStackTrace();
         }
     }
-
+    // 이메일로 유저를 삭제하는 메서드
     private void deleteUser(String email) throws SQLException {
         Connection connection = null;
         PreparedStatement deleteStmt = null;
         try {
             connection = DriverManager.getConnection(dburl, dbusername, dbpassword);
-            String deleteUserSQL = "DELETE FROM userdata WHERE email = ?";
-            deleteStmt = connection.prepareStatement(deleteUserSQL);
+            String deleteUserSQL = "DELETE FROM userdata WHERE email = ?"; //삭제 SQL 문
+            deleteStmt = connection.prepareStatement(deleteUserSQL); //삭제 실행
             deleteStmt.setString(1, email);
 
             int rowsDeleted = deleteStmt.executeUpdate();
-            if (rowsDeleted > 0) {
+            if (rowsDeleted > 0) { //삭제 성공
                 System.out.println("User deleted successfully!");
-            } else {
+            } else { //삭제 실패
                 System.out.println("Failed to delete user.");
                 throw new SQLException("Failed to delete user with email: " + email);
             }

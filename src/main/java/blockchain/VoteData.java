@@ -24,5 +24,10 @@ public class VoteData {
                 ", candidateSymbol='" + candidateSymbol + '\'' +
                 '}';
     }
+    
+    // TEST용: voterEmail 세터 메서드 추가
+    public void setVoterEmail(String voterEmail) {
+        this.voterEmail = voterEmail;
+    }
 }
 

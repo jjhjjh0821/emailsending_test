@@ -5,7 +5,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval';">
     <title>회원가입</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
@@ -61,6 +60,21 @@
 		    background-color: #ffffff;
 		    border-color: #007bff;
 		    outline: none;
+		}
+		.input-group {
+		    position: relative;
+		}
+		
+		.eye-icon {
+		    position: absolute;
+            right: 20px;
+            top: 50%;
+		    transform: translateY(-50%);
+            color: lightgray;
+            font-size: 18px;
+            cursor: pointer;
+            pointer-events: auto; 
+            z-index: 10;
 		}
         
         #sendBtn, #confirmBtn {
@@ -122,12 +136,15 @@
                     <span class="input-group-text"><i class="fas fa-lock"></i></span>
                 </div>
                 <input type="password" class="form-control" placeholder="Password" aria-label="Password" id="signupModalInputtedUserPassword" oninput="validateInputs()">
+                    <span class="eye-icon" id="togglePassword" style="cursor: pointer;">
+                    	<i class="fas fa-eye-slash" id="eyeIcon"></i>
+                	</span>
             </div>
             <button type="button" class="btn btn-primary btn-block mb-3" id="sendBtn" name="sendBtn" onclick="sendEmail()" disabled>인증번호 전송</button>
             <div id="mail_number" name="mail_number">
                 <div class="input-group mb-3">
                     <div class="input-group-prepend">
-                        <span class="input-group-text"><i class="fas fa-lock"></i></span> 
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
                     </div>
                     <input type="text" class="form-control" name="number" id="number" placeholder="인증번호 입력">
                 </div>
@@ -142,6 +159,8 @@
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/crypto-js.js"></script>
 
     <script type="text/javascript">
+    
+ 		// 입력 유효성 검사
         function validateInputs() {
             var name = $("#signupModalInputtedUserName").val();
             var dob = $("#signupModalInputtedUserDOB").val();
@@ -156,6 +175,7 @@
             }
         }
 
+     	// 이메일 도메인 선택
         function selectEmailChange(select) {
             var selectedOption = select.value;
             var domainInput = document.getElementById("showSelectedValue");
@@ -180,13 +200,14 @@
             }
         }
         
-        var otp; // 전역변수 선언
-        var timerInterval; // 타이머 인터벌 저장
+        var otp; 
+        var timerInterval;
         
+   		// 이메일로 OTP 전송
         function sendEmail() {
             var email = $("#signupModalInputtedUserEmail").val();
             var domain = $("#showSelectedValue").val();
-            var fullEmail = email + "@" + domain;
+            var fullEmail = email + "@" + domain; // 전체 이메일 주소 생성
             
             $("#sendBtn").prop("disabled", true); // 인증번호 버튼 비활성화
             
@@ -208,6 +229,7 @@
             });
         }
         
+     	// 타이머
         function startTimer(duration) {
             var timer = duration;
             clearInterval(timerInterval); // 기존 타이머 클리어
@@ -222,15 +244,16 @@
                 $("#number").attr("placeholder", "인증번호 입력 (" + minutes + ":" + seconds + ")");
                 $("#timer").text(minutes + ":" + seconds);
 
-                if (--timer < 0) {
+                if (--timer < 0) { // 타이머 종료시
                     clearInterval(timerInterval);
                     alert("OTP 유효기간이 만료되었습니다.");
                     $("#confirmBtn").prop("disabled", true); // "이메일 인증" 버튼 비활성화
                     $("#sendBtn").prop("disabled", false); // "인증번호 전송" 버튼 다시 활성화
                 }
-            }, 1000);
+            }, 1000); // 1초 간격으로 실행
         }
         
+     	// 입력한 OTP 유효성 확인
         function confirmNumber() {
             var name = $("#signupModalInputtedUserName").val();
             var dob = $("#signupModalInputtedUserDOB").val();
@@ -242,7 +265,7 @@
             var enteredOTP = $("#number").val();
             
             if (storedOTP === enteredOTP) {
-                alert("인증되었습니다.");
+                alert("인증되었습니다."); // 인증 성공
                 
                 // 클라이언트에서 비밀번호 평문으로 전송 -> 서버에서 해시화
                 $.ajax({
@@ -268,6 +291,23 @@
                 alert("인증번호가 올바르지 않습니다. 다시 시도해주세요.");
             }
         }
+        
+     	// 비밀번호 입력 보기 토글
+        document.getElementById('togglePassword').addEventListener('click', function () {
+            const passwordInput = document.getElementById('signupModalInputtedUserPassword');
+            const eyeIcon = document.getElementById('eyeIcon');
+
+            // 비밀번호 입력란의 type을 toggle
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text'; // 비밀번호 보이기
+                eyeIcon.classList.remove('fa-eye-slash'); // 눈 빗금 아이콘 제거
+                eyeIcon.classList.add('fa-eye');
+            } else {
+                passwordInput.type = 'password'; // 비밀번호 숨기기
+                eyeIcon.classList.remove('fa-eye'); // 눈 아이콘 제거
+                eyeIcon.classList.add('fa-eye-slash'); 
+            }
+        });
     </script>
 </body>
 </html>

@@ -15,6 +15,8 @@ import java.sql.SQLException;
 
 @WebServlet("/userinfo")
 public class UserInfoServlet extends HttpServlet {
+	
+	private static final long serialVersionUID = 1L;
 
 	private static final String DB_URL = "jdbc:postgresql://localhost:5432/postgres"; // DB URL
     private static final String DB_USER = "postgres"; // DB 사용자명

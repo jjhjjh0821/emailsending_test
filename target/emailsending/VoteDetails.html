@@ -177,44 +177,76 @@
                 <div id="vote-creator" class="vote-creator"></div>
                 <div id="candidates" class="candidates-list">Loading candidates...</div>
                 <div id="message-container" class="message-container" style="display: none;"></div>
-                <button id="back-button" class="btn btn-secondary">뒤로가기</button>
+                <button id="back-button" class="btn btn-secondary">메인으로</button>
             </div>
         </div>
     </div>
 
     <script>
+    	//쿼리 파라미터 가져옴
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(param);
         }
+    	
+    	let userType =' ';
         
-     	// 유권자 여부 확인 함수
-        function checkVoterEligibility() {
-        	const voteId = getQueryParam('id');
+    	// 유저 타입 확인 함수
+        async function checkUserType() {
             const token = localStorage.getItem("jwtToken");
-            return fetch(`/emailsending/checkVoter?voteId=${voteId}`, {
-                method: "GET",
-                headers: {
-                    "Authorization": "Bearer " + token
+            
+            try {
+                const response = await fetch("/emailsending/userinfo", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch user info");
                 }
-            }).then(response => {
+
+                const userInfo = await response.json();
+                userType = userInfo.user_type; // 유저 타입 저장
+                //console.log("User type:", userType); // 유저 타입 확인용 콘솔 출력
+            } catch (error) {
+                console.error("Error fetching user info:", error);
+                throw error;
+            }
+        }    
+     // 유권자 여부 확인 함수
+        async function checkVoterEligibility() {
+            const voteId = getQueryParam('id');
+            const token = localStorage.getItem("jwtToken");
+
+            try {
+                const response = await fetch(`/emailsending/checkVoter?voteId=${voteId}`, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                });
+
                 if (!response.ok) {
                     throw new Error("Failed to check voter eligibility");
                 }
-                return response.json();
-            }).then(voterData => {
-                if (!voterData.isVoter) {
+
+                const voterData = await response.json();
+
+                if (!voterData.isVoter && userType !== 'admin') { // 관리자 & 유권자 아닐 때
                     document.getElementById("candidates").style.display = "none";
                     const messageContainer = document.getElementById("message-container");
                     messageContainer.style.display = "block";
                     messageContainer.textContent = "유권자가 아닙니다. 후보자를 볼 수 없습니다.";
-                    return;
                 }
-            });
+            } catch (error) {
+                console.error("Error checking voter eligibility:", error);
+            }
         }
 
         // 투표 세부 사항을 로드
-        function loadVoteDetails() {
+        async function loadVoteDetails() {
             const voteId = getQueryParam('id');
             if (!voteId) {
                 alert("투표 ID가 제공되지 않았습니다.");
@@ -229,22 +261,21 @@
                 return;
             }
 
-            // 서버에서 투표 세부 정보를 로드
-            fetch(`/emailsending/getvotes?id=${voteId}`, {
-                method: "GET",
-                headers: {
-                    "Authorization": "Bearer " + token
-                }
-            })
-            .then(response => {
+            try {
+                const response = await fetch(`/emailsending/getvotes?id=${voteId}`, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                });
+
                 if (response.status === 401) {
                     throw new Error("Unauthorized");
                 } else if (!response.ok) {
                     throw new Error("Failed to fetch vote details");
                 }
-                return response.json();
-            })
-            .then(data => {
+
+                const data = await response.json();
                 const vote = Array.isArray(data) ? data.find(item => item.id === voteId) : data;
 
                 if (!vote) {
@@ -255,46 +286,42 @@
                 document.getElementById("vote-dates").innerHTML = `시작: ${new Date(vote.start).toLocaleString()}<br>종료: ${new Date(vote.end).toLocaleString()}`;
                 document.getElementById("vote-creator").textContent = `투표 작성자: ${vote.creatorName}`;
 
-                checkVoterEligibility();
+                await checkUserType();
                 
-             	// 시작 시간 이전 or 종료 시간이 이후에 투표 버튼 비활성화
+                if (userType !== 'admin') {
+                    await checkVoterEligibility();
+                }
+
+                // 투표 버튼 비활성화 처리
                 const now = new Date();
                 const startDate = new Date(vote.start);
                 const endDate = new Date(vote.end);
                 
-                if (now < startDate || now > endDate) {
+                if ((now < startDate || now > endDate) && userType !== 'admin') {
                     document.querySelectorAll(".candidate-item").forEach(item => {
                         item.classList.add("disabled");
                     });
-                    
-                 	// candidates 컨테이너 숨김
+
                     const candidatesContainer = document.getElementById("candidates");
                     candidatesContainer.style.display = "none";
 
                     const messageContainer = document.getElementById("message-container");
                     messageContainer.style.display = "block";
-                    
-                    if (now < startDate) {
-                    	messageContainer.textContent = "투표 시작 전입니다.";
-                    } else {
-                    	messageContainer.textContent = "투표 기간이 종료되었습니다.";
-                    }
-                    
+
+                    messageContainer.textContent = now < startDate ? "투표 시작 전입니다." : "투표 기간이 종료되었습니다.";
                 } else {
-                    // 후보자 정보를 로드
-                    loadCandidates(voteId);
+                    // 후보자 정보 로드
+                    loadCandidates(voteId, endDate);
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error("Error:", error);
                 alert(error.message);
                 window.location.href = "Mainpage.html";
-            });
+            }
         }
 
-
-        // 후보자 정보를 서버에서 로드
-        function loadCandidates(voteId) {
+        // 후보자 정보를 로드
+        function loadCandidates(voteId, endDate) {
 		    const token = localStorage.getItem("jwtToken");
 		    
 		    fetch(`/emailsending/getcandidates?voteId=${voteId}`, {
@@ -322,14 +349,40 @@
 		                candidateItem.className = "candidate-item";
 		                candidateItem.textContent = `기호 ${candidate.symbol}번 ${candidate.name}`;
 		                
-		                // 투표시 함수 동작
-		                candidateItem.addEventListener("click", function() {
-							    
-							    const confirmed = confirm(`기호 ${candidate.symbol}번 ${candidate.name} 에게 투표하시겠습니까?`);
-						        if (confirmed) {
-						            voteForCandidate(voteId, candidate.symbol);
-						        }
-			                });
+		                // 클릭 시 블록체인 유효성 검사 후 투표 함수 실행
+		                candidateItem.addEventListener("click", async function() {
+		                    const confirmed = confirm(`기호 ${candidate.symbol}번 ${candidate.name} 에게 투표하시겠습니까?`);
+		                    
+		                    if (confirmed) {
+
+		                        const now = new Date();
+
+		        				// 한국 시간으로 변환 (UTC + 9시간)
+		        				now.setHours(now.getHours() + 9);
+		        	
+		        				const voteTime = now.toISOString().replace('T', ' ').slice(0, 23);
+		                        
+		        				// 블록체인 생성 & 유효성 검사
+		        				const validationResponse = await checkBlockchain(voteId, candidate.symbol, voteTime);
+		                        
+		        				if (validationResponse.isValid1) {
+		                            // 첫 번째 유효성 검사 통과
+		                            //alert("기존 블록체인이 유효합니다.");
+
+		                            if (validationResponse.isValid2) {
+		                            	// 두 번째 유효성 검사 통과 -> 투표함수 동작
+		                            	await voteForCandidate(voteId, candidate.symbol, endDate);
+
+		                            } else {
+		                                alert("새로운 블록체인이 유효하지 않습니다. 투표가 종료됩니다.");
+		                                window.location.href = "Mainpage.html";
+		                            }
+		                        } else {
+		                            alert(validationResponse.error); // 오류 메시지 출력
+		                            window.location.href = "Mainpage.html";
+		                        }
+		                    }
+		                });
 		
 		                candidatesContainer.appendChild(candidateItem);
 		            });
@@ -342,9 +395,36 @@
 		    });
 		}
         
-        // 투표 함수
-        function voteForCandidate(voteId, symbol) {
+     	// 유효성 검사 & 블록체인 생성
+        async function checkBlockchain(voteId, symbol, voteTime) {
 		    const token = localStorage.getItem("jwtToken");
+		
+		    try {
+		        const response = await fetch(`/emailsending/BlockchainServlet?symbol=${symbol}&voteId=${voteId}&voteTime=${voteTime}`, {
+		            method: "POST",
+		            headers: {
+		                "Authorization": "Bearer " + token,
+		                "Content-Type": "application/json; charset=UTF-8"
+		            }
+		        });
+		        
+		        return await response.json(); // JSON 응답 반환
+		        
+		     	// 유효하지 않은 경우 테스트용
+		        /*return {
+		            isValid1: false,
+		            isValid2: false,
+		            error: "블록체인이 유효하지 않습니다." // 원하는 오류 메시지 설정
+		        };*/
+		    } catch (error) {
+		        console.error("Error during blockchain validity check:", error);
+		        return { isValid1: false, isValid2: false, error: "유효성 검사 중 오류 발생" }; // 오류 메시지
+		    }
+		}
+     	
+     	// 투표 함수
+        async function voteForCandidate(voteId, symbol, endDate) {
+        	const token = localStorage.getItem("jwtToken");
 		    if (!token) {
 		        alert("로그인이 필요합니다!");
 		        window.location.href = "Loggingin.html";
@@ -361,8 +441,7 @@
 		    .then(response => {
 		        if (response.status === 401) {
 		            throw new Error("Unauthorized");
-		        } else if (response.status === 403) {
-		        	//alert("이미 투표 하셨습니다. 메인페이지로 이동합니다.");
+		        } else if (response.status === 403) {  // 이미 투표한 경우 메인 페이지로 이동
 		            window.location.href = `Mainpage.html`;
 		            throw new Error("이미 투표 하셨습니다.메인페이지로 이동합니다.");
 		        } else if (!response.ok) {
@@ -371,57 +450,37 @@
 		        return response.json();
 		    })
 		    .then(data => {
-		    	
-		    	const now = new Date();
+		        alert('투표가 완료되었습니다.');
 
-				// 한국 시간으로 변환 (UTC + 9시간)
-				now.setHours(now.getHours() + 9);
-		
-				// ISO 형식으로 출력
-				const voteTime = now.toISOString().replace('T', ' ').slice(0, 23);
-				 
-			    alert('투표가 완료되었습니다.');
-			
-			    // 블록체인에 전달
-			    return fetch(`/emailsending/BlockchainServlet?symbol=${symbol}&voteId=${voteId}&voteTime=${voteTime}`, {
-			        method: "POST",
-			        headers: {
-			            "Authorization": "Bearer " + token,
-			            "Content-Type": "application/json; charset=UTF-8"
-			        }
-			    });
-			})
-			.then(blockchainResponse => {
-			    if (!blockchainResponse.ok) {
-			        window.location.href = "Mainpage.html";
-			        throw new Error("Failed to update blockchain");
-			    }
-			    return blockchainResponse.json();
-			})
-			.then(blockchainData => {
-				 // 블록체인 응답 처리 후 유효성 체크
-		        if (blockchainData.error) {
-		            alert(blockchainData.error);
-		            window.location.href = "Mainpage.html"; // 유효하지 않으면 메인 페이지로
-		        } else {
-		            // 유효한 경우 결과 화면으로
+		        const now = new Date();
+		        const endD = new Date(endDate);
+
+		        if (now > endD) {
+		            // 종료 시간이 지난 경우 결과 페이지로 이동
 		            window.location.href = `VoteResults.html?id=${voteId}`;
+		        } else {
+		            // 종료 시간이 지나지 않은 경우 메인 페이지로 이동
+		            window.location.href = "Mainpage.html";
 		        }
-			})
-			.catch(error => {
-			    console.error("Error:", error);
-			    alert(error.message);
-			});
-		}
+		    })
+		    .catch(error => {
+		        console.error("Error:", error);
+		        alert(error.message);
+		    });
+     	}
 
+
+        // 뒤로가기 버튼
         document.getElementById("back-button").addEventListener("click", function() {
             window.location.href = "Mainpage.html";
         });
 
+        // 마이페이지 버튼
         document.getElementById("info-button").addEventListener("click", function() {
             window.location.href = "UserInfo.html"; 
         });
 
+        // 로그아웃 버튼
         document.getElementById("logout-button").addEventListener("click", function() {
             if (confirm("정말로 로그아웃하시겠습니까?")) {
                 localStorage.removeItem("jwtToken");

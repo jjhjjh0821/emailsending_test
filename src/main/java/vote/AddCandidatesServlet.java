@@ -2,7 +2,6 @@ package vote;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.sql.*;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -13,6 +12,8 @@ import org.json.JSONObject;
 
 @WebServlet("/addcandidates")
 public class AddCandidatesServlet extends HttpServlet {
+	
+	private static final long serialVersionUID = 1L;
 
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

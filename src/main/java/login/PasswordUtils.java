@@ -19,7 +19,7 @@ public class PasswordUtils {
             }
             return hexString.toString(); 
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e); // SHA-256 알고리즘을 찾을 수 없는 경우 RuntimeException 발생
         }
     }
 
