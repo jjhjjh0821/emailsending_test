@@ -17,7 +17,7 @@ public class PostgresTestServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String dbUrl = "jdbc:postgresql://13.125.46.138:5432/postgres"; // EC2의 공인 IP 주소 입력
+        String dbUrl = "jdbc:postgresql://localhost:5432/postgres"; // EC2의 공인 IP 주소 입력
         String dbUsername = "postgres"; // PostgreSQL 사용자 이름
         String dbPassword = "1234"; // PostgreSQL 비밀번호
 
