@@ -24,7 +24,7 @@ public class Emailsender {
 		// SMTP 서버 설정 (Gmail 사용)
 		mailServerProperties.put("mail.smtp.host", "smtp.gmail.com"); // SMTP 서버 주소를 지정 (Gmail)
 		mailServerProperties.put("mail.smtp.port", "587"); // SMTP 서버의 포트를 지정 (587번 포트는 TLS를 위한 포트)
-		mailServerProperties.put("mail.smtp.connectiontimeout", "5000"); // 연결 시간 제한 설정 (5초 동안 서버와 연결이 안 될 경우 연결 시도를 중단)
+		mailServerProperties.put("mail.smtp.connectiontimeout", "10000"); // 연결 시간 제한 설정 (5초 동안 서버와 연결이 안 될 경우 연결 시도를 중단)
 		mailServerProperties.put("mail.smtp.auth", "true"); // SMTP 서버 연결 시 인증이 필요함을 명시
 		mailServerProperties.put("mail.smtp.starttls.enable", "true"); // SSL/TLS 암호화를 활성화. 암호화되지 않은 SMTP 연결을 TLS로 업그레이드하는 것을 허용 (보안 강화)
 		mailServerProperties.put("mail.smtp.starttls.required", "true"); // STARTTLS가 반드시 필요함을 명시. 서버가 TLS를 지원하지 않으면 연결이 중단
